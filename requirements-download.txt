@@ -1,0 +1,2 @@
+# Optional if yt-dlp is already installed and available on PATH.
+yt-dlp[default]>=2026.10.21

@@ -1,0 +1,7 @@
+# Diarization 子进程依赖（安装到 venv-diarize）
+#
+# 版本必须 pin 在 3.x：pyannote.audio 4.x 是重写版，API 和
+# pyannote/speaker-diarization-3.1 这套 pipeline 都不兼容。
+#
+# 可选说话人分割依赖，安装到独立环境。
+pyannote.audio>=3.3,<4

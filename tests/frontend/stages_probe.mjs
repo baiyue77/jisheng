@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+const html=fs.readFileSync(process.argv[2],'utf8'); const script=html.match(/<script>([\s\S]*)<\/script>/)[1];
+const els={}; const $=id=>els[id] ||= {value:'',checked:false,disabled:false,style:{},textContent:''};
+const calls=[]; let response={cancelled:true};
+const context=vm.createContext({$,pending:[{}],submitting:false,separationReady:true,diarizeReady:true,defaultOut:'default',fetch:async (url,opts)=>{calls.push({url,opts});return {ok:true,json:async()=>response}},alert:()=>{},saveSettings:()=>{}});
+const fn=name=>script.match(new RegExp('function '+name+'\\([^]*?\\n}'))[0];
+vm.runInContext(fn('updateTaskControls')+'\n'+fn('baseReq'),context);
+vm.runInContext(script.match(/\$\('backend'\)\.onchange=.*;/)[0],context);
+vm.runInContext(script.match(/\$\('chooseFolder'\)\.onclick = .*;/)[0],context);
+vm.runInContext(script.match(/\$\('openOut'\)\.onclick = .*;/)[0],context);
+$('taskMode').value='recognize'; $('backend').value='qwen'; $('backend').onchange();
+const language=$('language').value; $('outDir').value='D:/chosen'; await $('chooseFolder').onclick(); $('openOut').onclick();
+$('taskMode').value='extract'; context.updateTaskControls(); const req=context.baseReq('model',true);
+console.log(JSON.stringify({language,out:$('outDir').value,open:calls.at(-1).url,req,button:$('go').textContent,disabled:$('backend').disabled}));

@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>集声</title>
+<style>
+  :root{
+    --bg:#F7F7F5; --card:#FFFFFF; --ink:#1F1F1D; --ink2:#5F5E5A; --ink3:#888780;
+    --line:#E3E2DC; --accent:#185FA5; --accent-bg:#E6F1FB; --accent-line:#B5D4F4;
+    --ok:#0F6E56; --ok-bg:#E1F5EE; --warn:#854F0B; --warn-bg:#FAEEDA;
+    --err:#A32D2D; --err-bg:#FCEBEB;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 22px 60px}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:20px}
+  h1{font-size:20px;font-weight:600;margin:0}
+  .sub{color:var(--ink3);font-size:13px}
+  .cols{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:18px;align-items:start}
+  @media(max-width:960px){.cols{grid-template-columns:minmax(0,1fr)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px 19px;margin-bottom:15px}
+  h2{font-size:14px;font-weight:600;margin:0 0 13px}
+  h2 .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--accent-bg);
+    color:var(--accent);font-size:11px;align-items:center;justify-content:center;margin-right:8px;vertical-align:-4px}
+  #drop{border:2px dashed var(--line);border-radius:12px;padding:28px 18px;text-align:center;
+    cursor:pointer;transition:.15s;background:#FCFCFB}
+  #drop:hover,#drop.on{border-color:var(--accent);background:var(--accent-bg)}
+  #drop .big{font-size:15px;font-weight:500;margin-bottom:5px}
+  #drop .hint{font-size:12.5px;color:var(--ink3)}
+  .files{margin-top:11px}
+  .file{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);
+    border-radius:8px;margin-bottom:6px;font-size:13px;background:#FCFCFB}
+  .file .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file .sz{color:var(--ink3);font-size:12px;white-space:nowrap}
+  .file .rm{cursor:pointer;color:var(--ink3);font-size:15px;line-height:1;padding:0 4px}
+  .file .rm:hover{color:var(--err)}
+  label.f{display:block;font-size:12.5px;color:var(--ink2);margin:13px 0 5px;font-weight:500}
+  select,input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;
+    font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  select:disabled,input:disabled{background:#F1EFE8;color:var(--ink3)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:13px;color:var(--ink2)}
+  .chk input{width:16px;height:16px;accent-color:var(--accent)}
+  button{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 15px;
+    border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:500}
+  button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;width:100%;padding:12px;font-size:14px}
+  button.primary:hover:not(:disabled){background:#124a80}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.mini{padding:4px 10px;font-size:12px}
+  button.stop{color:var(--err);border-color:#F7C1C1}
+  button.stop:hover:not(:disabled){background:var(--err-bg);border-color:var(--err);color:var(--err)}
+  button.abandon{color:var(--err);border-color:#F7C1C1;font-weight:600}
+  button.abandon:hover:not(:disabled){background:var(--err);border-color:var(--err);color:#fff}
+  .job{border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:10px;background:#FCFCFB}
+  .job.run{border-color:var(--accent-line);background:#fff}
+  .job .hd{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:9px}
+  .job .hd .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .badge{font-size:11.5px;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .b-run{background:var(--accent-bg);color:var(--accent)}
+  .b-ok{background:var(--ok-bg);color:var(--ok)}
+  .b-err{background:var(--err-bg);color:var(--err)}
+  .b-wait{background:#F1EFE8;color:var(--ink3)}
+  .b-stop{background:var(--warn-bg);color:var(--warn)}
+  .steps{display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap}
+  .step{flex:1;min-width:72px;font-size:11.5px;text-align:center;padding:4px 3px;border-radius:6px;
+    background:#F1EFE8;color:var(--ink3);border:1px solid transparent}
+  .step.act{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-line);font-weight:500}
+  .step.done{background:var(--ok-bg);color:var(--ok)}
+  .prog{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .bar{flex:1;height:8px;background:#F1EFE8;border-radius:4px;overflow:hidden;min-width:60px}
+  .bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+  .bar.warnbar>i{background:var(--warn)}
+  .bar.okbar>i{background:var(--ok)}
+  .pct{font-size:12.5px;font-weight:600;min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+  .eta{font-size:12px;color:var(--ink3);min-width:96px;font-variant-numeric:tabular-nums}
+  .log{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--ink2);
+    height:150px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:6px;
+    padding:8px 10px;white-space:pre-wrap;word-break:break-all;line-height:1.55;
+    overflow-anchor:none}
+  .log div{min-height:1.5em}
+  .log .stderr{color:var(--err)}
+  .empty{color:var(--ink3);font-size:13px;text-align:center;padding:24px 10px}
+  .srt{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;white-space:pre-wrap;
+    max-height:400px;overflow-y:auto;background:#FCFCFB;border:1px solid var(--line);
+    border-radius:8px;padding:12px 14px;line-height:1.65}
+  .acts{display:flex;gap:8px;margin-bottom:11px;flex-wrap:wrap}
+  .tip{font-size:12.5px;color:var(--ink3);margin-top:10px}
+  /* 深色皮肤只给说话人卡片本身（div.spk）。原来写成 .spk 时，
+     「说话人标注」按钮 <button class="mini spk"> 也被涂成深底，
+     再叠上全局 button 的近黑字 —— 实测对比度 1.06，等于看不见。 */
+  div.spk{border:1px solid #2c3440;border-radius:8px;padding:10px;margin:8px 0;background:#151a21}
+  .spk .hd{display:flex;align-items:center;gap:10px;margin-bottom:6px;color:#e6ebf2}
+  .spk .meta{color:#8a94a6;font-size:12px}
+  .spk .clips{margin:4px 0}
+  .spk .clip{display:flex;align-items:center;gap:10px;margin:4px 0}
+  .spk .clip .cl{color:#8a94a6;font-size:12px;min-width:150px}
+  .spk .clip audio{height:30px}
+  /* 说话人面板的行用独立类名：全局 .row>*{flex:1} 会把输入框/按钮/下拉强行等分 */
+  .spk-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .spk-row>*{flex:0 0 auto}
+  .spk-row .nm{width:180px}
+  .spk-row select.merge{max-width:200px}
+  /* 白卡片里的两行（作品名行、导出训练集行）：全局 select,input[type=text]{width:100%}
+     会让每个控件各自占满一整行，把「丢弃不足 2 秒的短句」和「导出」顶出屏幕。
+     2560 宽的窗口实测：文档 scrollWidth 2754 > 2560，横向滚动条 + 按钮看不见。 */
+  #spkCard>.spk-row{flex-wrap:wrap}
+  #spkExport>.spk-row{flex-wrap:wrap}
+  #spkCard>.spk-row select,
+  #spkExport>.spk-row select{width:auto;max-width:100%}
+  #spkCard>.spk-row input[type=text]{width:auto;flex:1 1 220px;min-width:150px}
+  .spk .segs{margin-top:8px}
+  .spk .segs summary{cursor:pointer;color:#8a94a6;font-size:12px;
+    padding:4px 0;user-select:none}
+  .spk .seg{display:flex;align-items:center;gap:8px;font-size:12px;color:#c3cad6;
+    padding:3px 0;border-top:1px solid #232a34}
+  .spk .seg .idx{color:#8a94a6;min-width:34px;font-variant-numeric:tabular-nums}
+  .spk .seg .tm{color:#8a94a6;min-width:82px;font-variant-numeric:tabular-nums}
+  .spk .seg .tx{flex:1 1 auto;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .spk .seg select{width:auto;min-width:110px;padding:3px 6px;font-size:12px}
+  .spk .unknown-hd{margin-top:10px;color:#e0a458;font-size:12.5px}
+  /* 声纹建议 / 并入提示：建议永远是**建议**，用户一眼能看出它不是既成事实 */
+  .spk .sg{font-size:12px;color:#7fb0d8;margin-top:4px}
+  .spk .mg{font-size:12px;color:#8a94a6;margin-top:2px}
+  /* 角色库 / 声纹体检挂在白色 #spkCard 里，不能沿用深色面板的浅灰字：
+     #c3cad6 在白底上对比度只有 1.65，「艾丽丝」「同角色最低分」这些标签基本看不清。 */
+  .reg{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .reg h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--ink)}
+  .reg .regw{margin:6px 0}
+  .reg .regwh{font-size:12.5px;color:var(--ink2);margin-bottom:2px}
+  .reg .regr{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);
+    padding:3px 0;border-top:1px solid var(--line)}
+  .reg .regr .nm{min-width:140px}
+  .reg .regr .meta{color:var(--ink2);font-size:11.5px;flex:1 1 auto}
+  .reg .empty{color:var(--ink3);font-size:12.5px;padding:6px 0}
+  .exp{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .exp h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--ink)}
+  .exp code{font-size:11.5px;color:#9fb0c8;background:#0f1319;padding:1px 5px;border-radius:4px}
+  .exp .chk{font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:5px}
+  .exp .chk input{width:auto;margin:0}
+  /* .exp-res 仍是深色结果框，框里的字必须是浅色：原来用 --ink2/--ink，
+     在 #0f1319 上对比度只有 2.7，导入路径和计数几乎读不出来。 */
+  .exp-res{margin-top:10px;background:#0f1319;border:1px solid #2c3440;border-radius:8px;padding:10px 12px}
+  .exp-line{font-size:12.5px;color:#c3cad6;margin:3px 0;display:flex;align-items:center;gap:8px;
+    flex-wrap:wrap}
+  .exp-line.warn{color:#e0a458}
+  .exp-line b{color:#e8eef6;font-weight:600}
+  .warnbox{background:var(--warn-bg);border:1px solid #FAC775;border-radius:8px;padding:10px 13px;
+    font-size:12.5px;margin-top:11px;color:var(--warn)}
+  .resume{background:var(--warn-bg);border:1px solid #FAC775;border-radius:10px;padding:12px 15px;margin-bottom:15px}
+  .resume h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--warn)}
+  .resume .it{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink2);
+    padding:6px 0;border-top:1px dashed #FAC775}
+  .resume .it:first-of-type{border-top:none}
+  .resume .it .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .note{font-size:12px;color:var(--accent);margin:-2px 0 8px;font-variant-numeric:tabular-nums}
+  .audiobox{background:#fff;border:1px solid var(--line);border-radius:8px;
+    padding:8px 12px 10px;margin:0 0 8px;flex:1 1 100%}
+  .audio-label{font-size:12px;color:var(--ink2);margin-bottom:5px;font-weight:500}
+  .audiobox audio{width:100%;height:32px;display:block}
+
+  /* 轻量动漫工作台：柔和色块与清晰的工具层级 */
+  :root{--bg:#f5f4fc;--card:#fff;--ink:#28263d;--ink2:#56536e;--ink3:#706d85;--line:#e1dff0;--accent:#6650bd;--accent-bg:#f0edff;--accent-line:#c7bef2}
+  body{background:radial-gradient(ellipse at 10% 0%,#fceef7 0,transparent 35%),radial-gradient(ellipse at 95% 8%,#eaf5ff 0,transparent 32%),var(--bg)}
+  .wrap{max-width:1380px;padding:32px 28px 70px}
+  header{position:relative;display:block;overflow:hidden;background:linear-gradient(115deg,#363258,#635a9a 65%,#8a87bd);color:#fff;border:0;border-radius:22px;padding:27px 32px;margin-bottom:24px;box-shadow:0 14px 36px #41397820}
+  .header-art{position:absolute;right:38px;top:12px;width:150px;height:95px;color:#e6dfff;opacity:.8;pointer-events:none}
+  h1{font-size:26px;letter-spacing:.04em;font-weight:700}
+  .sub{display:block;color:#e3e0f4;margin-top:5px;font-size:13px}
+  .cols{grid-template-columns:minmax(0,.84fr) minmax(0,1.16fr);gap:22px}
+  .card{border:1px solid #e8e5f3;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 8px 28px #48416c0a}
+  h2{font-size:16px;font-weight:700;margin-bottom:18px;letter-spacing:.02em}
+  h2 .n{width:26px;height:26px;border-radius:9px;background:#eeeaff;color:#5943aa;font-weight:700;vertical-align:-5px;margin-right:10px}
+  #drop{position:relative;border:1.5px dashed #afa2e1;border-radius:15px;padding:35px 18px;background:linear-gradient(135deg,#f9f5ff,#eff8ff)}
+  #drop:before{content:'♪';display:grid;place-items:center;margin:0 auto 10px;width:42px;height:42px;border-radius:14px;background:#fff;color:#725dc1;font-size:23px;box-shadow:0 5px 15px #8273b522}
+  #drop .big{font-weight:700;color:#494065}
+  .file,.job{border-radius:12px;background:#faf9fe}
+  .job{padding:16px;border-color:#e7e4f2}
+  .job.run{box-shadow:inset 3px 0 #806bd3;background:#fbfaff}
+  select,input[type=text],input:not([type]){border-radius:9px;border-color:#dcd9e9;min-height:38px}
+  button{border-radius:10px;min-height:36px;transition:background-color .15s,border-color .15s,color .15s}
+  button.primary{border-radius:12px;padding:14px;background:linear-gradient(100deg,#6650bd,#8370ce);box-shadow:0 7px 18px #6650bd33;font-weight:700}
+  button.primary:hover:not(:disabled){background:#5842ad}
+  .step{border-radius:8px;padding:6px 3px}
+  .bar{height:9px;background:#eeecf6}.bar>i{background:linear-gradient(90deg,#806bd3,#87c9df)}
+  .log,.srt{background:#f9f8fd;border-color:#e8e5f3;border-radius:10px}
+  .empty{padding:38px 10px;color:#77718b}
+  .queue-empty{background:linear-gradient(145deg,#faf7ff,#f3f9ff);border:1px solid #ece8f7;border-radius:14px;padding:30px 18px}.queue-empty strong{display:block;color:#443b65;font-size:15px}.queue-empty p{margin:5px 0 20px}.workflow{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}.workflow span{background:#fff;border:1px solid #e9e5f3;border-radius:10px;padding:8px 10px;color:#5a536e;font-size:12px}.workflow b{color:#806bc8;margin-right:4px}.workflow i{font-style:normal;color:#aaa1c4}
+  :focus-visible{outline:3px solid #967ee5;outline-offset:3px}
+  .connection-banner{margin-bottom:20px;padding:18px 22px;border:1px solid #e9c985;border-radius:14px;background:#fff7e7;color:#704613}
+  .connection-banner p{margin:0 0 10px;overflow-wrap:anywhere}
+  .connection-banner a{display:inline-block;padding:7px 14px;background:#fff;border:1px solid #d5b16d;border-radius:8px;color:#704613;font-weight:600}
+  @media(max-width:960px){.cols{grid-template-columns:minmax(0,1fr)}}
+  @media(max-width:600px){.wrap{padding:16px 14px 40px}header{padding:22px;border-radius:16px}.header-art{width:95px;right:10px;opacity:.35}h1{font-size:21px}.card{padding:17px}.row{flex-wrap:wrap}.row>*{min-width:0}}
+  @media(max-width:600px){.spk .clip{flex-wrap:wrap}.spk .clip .cl{min-width:0;flex:1 1 100%;overflow-wrap:anywhere}.spk .clip audio{width:100%;min-width:0}.spk-row{flex-wrap:wrap}.spk-row>*{min-width:0;max-width:100%}.spk-row .nm,.spk-row select.merge{width:100%;max-width:100%}.exp-line{flex-wrap:wrap;overflow-wrap:anywhere}.exp-line code{min-width:0;overflow-wrap:anywhere}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+  .appearance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:12px 16px;margin-top:14px;align-items:end}
+  .appearance-grid label{display:grid;gap:4px;font-size:13px;color:var(--ink2)}
+  .appearance-grid input:not([type=checkbox]),.appearance-grid select{width:100%;min-width:0}
+  .appearance-grid input[type=range]{padding:0;accent-color:var(--accent)}
+  .appearance-grid .chk{display:flex;align-items:center;gap:7px}
+  #workbenchBackdrop{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background-repeat:no-repeat}
+  .wrap{position:relative;z-index:1}
+  body.custom-bg .card{background:rgba(255,255,255,var(--glass-opacity,.88))}
+  body.custom-bg.frosted-bg .card{backdrop-filter:blur(var(--glass-blur,10px))}
+
+</style>
+</head>
+<body>
+<div id="workbenchBackdrop" aria-hidden="true" hidden></div>
+<div class="wrap">
+  <header>
+    <h1>集声</h1>
+    <span class="sub">视频语音转录与 TTS 标注数据准备</span>
+    <svg class="header-art" viewBox="0 0 180 100" aria-hidden="true"><rect x="30" y="18" width="120" height="68" rx="14" fill="none" stroke="currentColor" stroke-width="3"/><rect x="46" y="30" width="88" height="35" rx="8" fill="currentColor" opacity=".18"/><circle cx="67" cy="48" r="11" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="113" cy="48" r="11" fill="none" stroke="currentColor" stroke-width="3"/><path d="M67 48h46M55 75h70M15 30l-7-5m7 15H5m153-17 7-6m-5 17h10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+  </header>
+  <details class="card" id="appearanceSettings">
+    <summary>外观与背景</summary>
+    <div class="appearance-grid">
+      <label>背景图<select id="bgPreset"><option value="">默认主题</option><option value="megumin" hidden>惠惠 · 爆裂魔法</option><option value="eris" hidden>艾莉丝 · 婚纱</option><option value="klee" hidden>可莉与旅行者</option><option value="local">本地图片</option></select></label>
+      <label>导入本地图片<input id="bgFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/bmp"></label>
+      <label>适配方式<select id="bgFit"><option value="cover">填充</option><option value="contain">完整显示</option></select></label>
+      <label>水平位置<input id="bgX" type="range" min="0" max="100" value="50"></label>
+      <label>垂直位置<input id="bgY" type="range" min="0" max="100" value="50"></label>
+      <label>背景亮度<input id="bgBright" type="range" min="30" max="150" value="100"></label>
+      <label>背景图不透明度<input id="bgOpacity" type="range" min="0" max="100" value="100"></label>
+      <label>卡片不透明度<input id="glassOpacity" type="range" min="65" max="100" value="88"></label>
+      <label class="chk"><input id="glassEnabled" type="checkbox" checked>启用毛玻璃</label>
+      <label>毛玻璃强度<input id="glassBlur" type="range" min="0" max="24" value="10"></label>
+      <button id="bgReset" type="button">恢复默认外观</button>
+    </div>
+    <p id="bgNotice" class="tip" role="status">导入的图片保存在此浏览器。</p>
+  </details>
+  <section id="connectionBanner" class="connection-banner" role="alert" style="display:none">
+    <p id="connectionNotice"></p>
+    <a id="openWorkbench" href="http://127.0.0.1:8760/">打开本地工作台</a>
+  </section>
+
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h2><span class="n">1</span>视频 / 音频输入</h2>
+        <div id="drop" role="button" tabindex="0" aria-label="选择视频或音频文件">
+          <div class="big">把视频或音频拖到这里</div>
+          <div class="hint">mp4 / mkv / mov / avi / mp3 / wav / m4a / flac，可多选</div>
+        </div>
+        <input type="file" id="picker" multiple accept="video/*,audio/*" style="display:none">
+        <div class="files" id="files"></div>
+        <label class="f" for="shareLink">视频分享链接或分享文案</label><div class="row"><input id="shareLink" type="text" placeholder="粘贴链接或分享文案"><button id="downloadLink" disabled>解析并下载</button></div>
+        <details><summary>高级选项</summary><label class="f" for="cookiesFile">cookies.txt 路径（仅登录受限时使用）</label><input id="cookiesFile" type="text"></details><div id="downloadNote" class="tip"></div>
+        <label class="f">或填本机路径（大文件走这个更快，免上传）</label>
+        <div class="row">
+          <input type="text" id="localPath" placeholder="D:\番剧\S01\EP01.mkv  或  整个文件夹">
+          <button id="addPath" style="flex:0 0 auto">添加</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">2</span>任务设置</h2>
+        <label class="f" for="taskMode">任务</label><select id="taskMode"><option value="recognize">仅识别</option><option value="extract">仅抽音频</option><option value="separate">仅分离</option><option value="diarize">仅分割说话人</option><option value="asr">完整流水线</option></select>
+        <div id="taskHint" class="tip"></div>
+        <label class="f" for="backend">识别引擎</label><select id="backend"><option value="whisper">anime-whisper（日语动漫）</option><option value="qwen">Qwen3-ASR（本地）</option></select>
+        <label class="f" for="language">语言</label><select id="language"><option value="ja">日语</option><option value="zh">中文</option></select><div id="qwenNote" class="tip"></div>
+        <div id="whisperSettings"><label class="f">ASR 模型</label>
+        <select id="asrModel"></select></div>
+        <div id="sepSettings"><div id="sepChain" class="chk"><input type="checkbox" id="doSep">
+          <label for="doSep" style="cursor:pointer">先做人声分离（去 BGM / 音效）</label></div>
+        <label class="f">分离模型</label>
+        <select id="sepModel" disabled></select>
+        <div class="warnbox" id="sepWarn" style="display:none"></div>
+        </div><div id="diaSettings"><div id="diaChain" class="chk"><input type="checkbox" id="doDiarize">
+          <label for="doDiarize" style="cursor:pointer">区分说话人（每行字幕前加 [说话人N]）</label></div>
+        <label class="f">说话人分割模型</label>
+        <select id="diaModel" disabled></select>
+        <div class="warnbox" id="diaWarn" style="display:none"></div>
+        <div class="row">
+          <div><label class="f">说话人数（留空自动估计）</label>
+            <input type="text" id="numSpeakers" placeholder="例如 2；留空自动"></div>
+          <div><label class="f">最小重叠秒数（低于则标 [?]）</label>
+            <input type="text" id="diaMinOverlap" value="0.3"></div>
+        </div>
+        </div><label class="f" for="outDir">输出目录（留空用默认）</label>
+        <div class="row"><input type="text" id="outDir" placeholder=""><button id="chooseFolder">选择目录</button></div>
+        <div class="chk"><input type="checkbox" id="useVad" checked>
+          <label for="useVad" style="cursor:pointer">启用 VAD（同时决定时间轴，建议保持开启）</label></div>
+        <div class="row">
+          <div><label class="f">beam size</label><input type="text" id="beam" value="5"></div>
+          <div><label class="f">术语表（可选，路径）</label><input type="text" id="glossary" placeholder="D:\番剧\术语表.txt"></div>
+        </div>
+      </div>
+
+      <button class="primary" id="go">开始识别</button>
+      <button class="primary" id="goSep"
+        style="display:none;margin-top:8px;background:#fff;color:var(--accent);border-color:var(--accent)">
+        仅做人声分离（导出试听，先别识别）</button>
+      <div class="row" style="margin-top:10px">
+        <button id="openOut">打开输出目录</button>
+        <button id="openSep">打开分离目录</button>
+      </div>
+      <div class="tip" id="gpuTip"></div>
+      <div class="tip" id="upTip" style="display:none"></div>
+    </div>
+
+    <div>
+      <div class="resume" id="resumeBox" style="display:none">
+        <h3>发现未完成的任务</h3>
+        <div id="resumeList"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">3</span>任务进度
+          <button class="mini" id="abandonAll" style="float:right;display:none">全部放弃</button>
+          <button class="mini" id="stopAll" style="float:right;display:none;margin-right:6px">全部停止</button></h2>
+        <div id="jobs"><div class="empty queue-empty"><strong>准备好开始了吗？</strong><p>导入素材后，就可以创建第一个任务。</p><div class="workflow"><span><b>01</b> 导入素材</span><i>→</i><span><b>02</b> 执行所选功能</span><i>→</i><span><b>03</b> 标注与导出</span></div></div></div>
+      </div>
+
+      <div class="card" id="spkCard" style="display:none">
+        <h2><span class="n">4</span>说话人标注
+          <button class="mini" id="spkClose" style="float:right">关闭</button></h2>
+        <div class="spk-row">
+          <label>作品名</label>
+          <input id="spkWork" placeholder="例如：无职转生">
+          <select id="spkOpen">
+            <option value="">— 打开已有检查点 —</option>
+          </select>
+        </div>
+        <div class="tip" id="spkNext"></div>
+        <div class="tip" id="spkTip"></div>
+        <div id="spkList"></div>
+        <datalist id="spkNames"></datalist>
+        <div class="reg" id="spkReg"></div>
+        <div class="reg" id="spkHealth"></div>
+        <div class="exp" id="spkExport">
+          <h3>导出训练集</h3>
+          <div class="tip">训练集保存在任务输出目录的 <code>说话人\</code> 下，包含 WAV 片段和所选格式的标注。请先为要训练的角色命名。</div>
+          <div class="spk-row">
+            <label for="expFormat">标注格式</label>
+            <select id="expFormat" aria-describedby="expFormatNote">
+              <option value="gpt_sovits">GPT-SoVITS · .list</option>
+              <option value="txt">通用文本 · .txt</option>
+              <option value="fish_speech">Fish Speech / OpenAudio S1 · .lab</option>
+              <option value="indextts">IndexTTS2 · 社区训练器 .jsonl</option>
+            </select>
+            <label for="expSr">采样率</label>
+            <select id="expSr">
+              <option value="32000">32000 Hz（16-bit PCM，推荐）</option>
+              <option value="44100">44100 Hz</option>
+            </select>
+            <label for="expSource">音源</label>
+            <select id="expSource">
+              <option value="hq">高质量（从原片全采样率重新分离，慢但高频完整）</option>
+              <option value="fast">快速（复用既有 16 kHz 产物，音色会发闷）</option>
+            </select>
+            <label class="chk"><input type="checkbox" id="expDropShort"> 丢弃不足 2 秒的短句</label>
+            <button id="expGo">导出</button>
+          </div>
+          <div class="tip" id="expFormatNote">把 .list 文件填入 GPT-SoVITS 的标注文件路径。</div>
+          <div class="tip" id="expTip"></div>
+          <div class="exp-res" id="expRes" style="display:none">
+            <div class="exp-line"><b id="expManifestLabel">标注文件</b>
+              <code id="expList"></code>
+              <button class="mini" id="expOpen">打开目录</button>
+            </div>
+            <div class="exp-line" id="expCounts"></div>
+            <div class="exp-line warn" id="expWarn" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="previewCard" style="display:none">
+        <h2><span class="n">5</span>字幕预览</h2>
+        <div class="acts" id="acts"></div>
+        <div class="srt" id="srt"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const backgroundPresets = {
+  megumin: '/assets/backgrounds/megumin.webp',
+  eris: '/assets/backgrounds/eris.webp',
+  klee: '/assets/backgrounds/klee.webp'
+};
+const backgroundDefaults = {
+  bgPreset: '', bgFit: 'cover', bgX: '50', bgY: '50', bgBright: '100', bgOpacity: '100',
+  glassOpacity: '88', glassBlur: '10', glassEnabled: true
+};
+const backgroundKey = 'jisheng-bg-settings';
+const backgroundNotice = '导入的图片保存在此浏览器。';
+let localBackgroundUrl = '';
+
+function restoreBackgroundSettings(values){
+  for(const [id, fallback] of Object.entries(backgroundDefaults)){
+    const value = values?.[id];
+    if(typeof fallback === 'boolean') $(id).checked = typeof value === 'boolean' ? value : fallback;
+    else $(id).value = typeof value === 'string' ? value : fallback;
+  }
+}
+
+function applyBackground(){
+  const preset = $('bgPreset').value;
+  const url = preset === 'local' ? localBackgroundUrl : backgroundPresets[preset];
+  const backdrop = $('workbenchBackdrop');
+  const glass = $('glassEnabled').checked;
+  backdrop.hidden = !url;
+  backdrop.style.backgroundImage = url ? 'url("' + url + '")' : '';
+  backdrop.style.backgroundSize = $('bgFit').value;
+  backdrop.style.backgroundPosition = $('bgX').value + '% ' + $('bgY').value + '%';
+  backdrop.style.filter = 'brightness(' + $('bgBright').value + '%)';
+  backdrop.style.opacity = Number($('bgOpacity').value) / 100;
+  document.body.classList.toggle('custom-bg', !!url);
+  document.body.classList.toggle('frosted-bg', !!url && glass);
+  $('glassBlur').disabled = !glass;
+  document.documentElement.style.setProperty('--glass-opacity', Number($('glassOpacity').value) / 100);
+  document.documentElement.style.setProperty('--glass-blur', $('glassBlur').value + 'px');
+}
+
+function saveBackgroundSettings(){
+  const settings = {};
+  for(const [id, fallback] of Object.entries(backgroundDefaults)){
+    settings[id] = typeof fallback === 'boolean' ? $(id).checked : $(id).value;
+  }
+  try {
+    localStorage.setItem(backgroundKey, JSON.stringify(settings));
+  } catch {
+    $('bgNotice').textContent = '无法保存外观设置，刷新后可能会恢复默认。';
+  }
+}
+
+async function localBackground(file, database = 'jisheng-appearance'){
+  const db = await new Promise((resolve, reject) => {
+    const request = indexedDB.open(database, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('images');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction('images', file ? 'readwrite' : 'readonly');
+      const store = tx.objectStore('images');
+      const request = file ? store.put(file, 'background') : store.get('background');
+      tx.oncomplete = () => resolve(request.result);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function selectBackground(){
+  $('bgNotice').textContent = backgroundNotice;
+  if($('bgPreset').value === 'local' && !localBackgroundUrl){
+    try {
+      const image = await localBackground() || await localBackground(undefined, 'animeasr-appearance');
+      if(image) localBackgroundUrl ||= URL.createObjectURL(image);
+      else $('bgNotice').textContent = '请选择一张本地图片。';
+    } catch {
+      $('bgNotice').textContent = '无法读取浏览器中保存的图片，请重新导入。';
+    }
+  }
+  applyBackground();
+}
+
+try {
+  restoreBackgroundSettings(JSON.parse(localStorage.getItem(backgroundKey)
+    || localStorage.getItem('animeasr-bg-settings') || '{}'));
+} catch {
+  restoreBackgroundSettings({});
+}
+for(const id of Object.keys(backgroundDefaults)){
+  if($(id).type === 'range') $(id).addEventListener('input', applyBackground);
+  $(id).addEventListener('change', () => {
+    if(id === 'bgPreset') selectBackground();
+    else applyBackground();
+    saveBackgroundSettings();
+  });
+}
+$('bgReset').addEventListener('click', () => {
+  restoreBackgroundSettings({});
+  selectBackground();
+  saveBackgroundSettings();
+});
+$('bgFile').addEventListener('change', async e => {
+  const input = e.target;
+  const file = input.files[0];
+  if(!file) return;
+  input.value = '';
+  if(file.size > 24 * 1024 * 1024){
+    $('bgNotice').textContent = '图片超过 24 MB，请换一张较小的图片。';
+    return;
+  }
+  input.disabled = true;
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    let saved = true;
+    try {
+      await localBackground(file);
+    } catch {
+      saved = false;
+    }
+    if(localBackgroundUrl) URL.revokeObjectURL(localBackgroundUrl);
+    localBackgroundUrl = url;
+    $('bgPreset').value = 'local';
+    $('bgNotice').textContent = saved ? backgroundNotice : '图片已应用，本次会话结束后需要重新导入。';
+    applyBackground();
+    if(saved) saveBackgroundSettings();
+  } catch {
+    URL.revokeObjectURL(url);
+    $('bgNotice').textContent = '无法读取此图片，请选择有效的 PNG、JPEG 或 WebP 图片。';
+  } finally {
+    input.disabled = false;
+  }
+});
+document.addEventListener('DOMContentLoaded', selectBackground, {once:true});
+$('drop').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('picker').click(); } });
+let pending = [];
+let submitting = false;
+let jobs = [];                 // 数据
+const els = {};                // jid -> {root, badge, steps[], bar, pct, eta, log, acts, stopBtn, shownLogs}
+let selected = null;
+let resumables = [];
+let spkExportJob = null;       // 面板上正在盯着的导出任务 id
+let spkExportDone = null;      // 已经渲染过的导出任务 id（避免重复渲染）
+let spkReg = null;             // GET /api/registry 的最近一次结果（角色库）
+/* 声纹体检：`GET /api/registry/health` 是**只读**的纯计算（回答「现在这套阈值
+   有没有依据」），所以这一节只展示、不提供「一键采用」—— 写阈值是改匹配规则
+   的语义动作，该由一次明确的确认来触发。
+   读不到时的原因单独存一个字段：**接口坏了**与**样本不够**是两件事，
+   混成一句话会让用户跑去多录几集，白费功夫。 */
+let spkHealth = null;
+let spkHealthErr = null;
+let spkHintRefreshers = [];    // 每个聚类那行「并入/新建」提示的重算函数
+
+function fmtScore(s){
+  return (typeof s === 'number' && isFinite(s)) ? s.toFixed(3) : '?';
+}
+
+function fmtSize(n){ if(!n) return ''; const u=['B','KB','MB','GB']; let i=0;
+  while(n>=1024&&i<u.length-1){n/=1024;i++} return n.toFixed(n<10&&i>0?1:0)+' '+u[i]; }
+function fmtEta(sec){
+  if(sec==null||!isFinite(sec)||sec<0) return '';
+  sec=Math.round(sec);
+  if(sec<60) return '剩余 '+sec+' 秒';
+  if(sec<3600) return '剩余 '+Math.floor(sec/60)+' 分 '+(sec%60)+' 秒';
+  return '剩余 '+Math.floor(sec/3600)+' 时 '+Math.floor(sec%3600/60)+' 分';
+}
+
+/* ---------- 输入 ---------- */
+function renderFiles(){
+  const files = $('files');
+  files.replaceChildren();
+  for(const p of pending){
+    const row = document.createElement('div');
+    row.className='file';
+    const name = document.createElement('span');
+    name.className='nm'; name.textContent=p.name;
+    const size = document.createElement('span');
+    size.className='sz'; size.textContent=p.file?fmtSize(p.file.size):'本机路径';
+    const remove = document.createElement('button');
+    remove.className='rm'; remove.textContent='✕'; remove.title='从待处理中移除';
+    remove.disabled=submitting;
+    remove.onclick=()=>{ pending=pending.filter(item=>item!==p); renderFiles(); };
+    row.appendChild(name); row.appendChild(size); row.appendChild(remove);
+    files.appendChild(row);
+    if(p.error){
+      const feedback=document.createElement('div');
+      feedback.className='warnbox';
+      const error=document.createElement('div');
+      error.textContent=p.error;
+      feedback.appendChild(error);
+      if(!p.file){
+        const path=document.createElement('input');
+        path.value=p.path; path.disabled=submitting;
+        path.setAttribute('aria-label','修正输入路径');
+        path.oninput=()=>{p.path=path.value.trim();p.name=pathName(p.path);};
+        feedback.appendChild(path);
+      }
+      const retry=document.createElement('button');
+      retry.textContent='重试'; retry.disabled=submitting;
+      retry.onclick=()=>runAll($('go'), $('taskMode').value || 'recognize', [p]);
+      feedback.appendChild(retry); files.appendChild(feedback);
+    }
+  }
+  $('go').disabled = pending.length===0;
+  if(typeof updateTaskControls==='function' && typeof separationReady!=='undefined') updateTaskControls();
+  for(const r of Object.values(els)) syncPendingButtons(r);
+}
+const drop = $('drop');
+drop.onclick = ()=> $('picker').click();
+$('picker').onchange = e => { addFiles(e.target.files); e.target.value=''; };
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('on')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('on')}));
+drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+function addFiles(list){
+  for(const f of list) if(!pending.some(p=>p.file===f)) pending.push({name:f.name,file:f});
+  renderFiles();
+}
+$('addPath').onclick = ()=>{
+  const v=$('localPath').value.trim(); if(!v) return;
+  pending.push({name:v.replace(/[\\/]+$/,'').split(/[\\/]/).pop(), path:v});
+  $('localPath').value=''; renderFiles();
+};
+$('doSep').onchange = e => $('sepModel').disabled = !e.target.checked;
+$('doDiarize').onchange = e => $('diaModel').disabled = !e.target.checked;
+
+let separationReady=true, diarizeReady=true, downloadReady=false;
+let backendConnected=false;
+const DEFAULT_QWEN_LANGUAGES=[{"value":"auto","label":"自动识别语言"},{"value":"zh","label":"中文（含方言） · zh"},{"value":"en","label":"英语 · en"},{"value":"yue","label":"粤语 · yue"},{"value":"ja","label":"日语 · ja"},{"value":"ko","label":"韩语 · ko"},{"value":"ar","label":"阿拉伯语 · ar"},{"value":"de","label":"德语 · de"},{"value":"fr","label":"法语 · fr"},{"value":"es","label":"西班牙语 · es"},{"value":"pt","label":"葡萄牙语 · pt"},{"value":"id","label":"印度尼西亚语 · id"},{"value":"it","label":"意大利语 · it"},{"value":"ru","label":"俄语 · ru"},{"value":"th","label":"泰语 · th"},{"value":"vi","label":"越南语 · vi"},{"value":"tr","label":"土耳其语 · tr"},{"value":"hi","label":"印地语 · hi"},{"value":"ms","label":"马来语 · ms"},{"value":"nl","label":"荷兰语 · nl"},{"value":"sv","label":"瑞典语 · sv"},{"value":"da","label":"丹麦语 · da"},{"value":"fi","label":"芬兰语 · fi"},{"value":"pl","label":"波兰语 · pl"},{"value":"cs","label":"捷克语 · cs"},{"value":"fil","label":"菲律宾语 · fil"},{"value":"fa","label":"波斯语 · fa"},{"value":"el","label":"希腊语 · el"},{"value":"hu","label":"匈牙利语 · hu"},{"value":"mk","label":"马其顿语 · mk"},{"value":"ro","label":"罗马尼亚语 · ro"}];
+let qwenLanguages=DEFAULT_QWEN_LANGUAGES;
+const submittedDownloads=new Set(), importedDownloads=new Set();
+function setLanguages(value){
+ const list=$('backend').value==='qwen'?qwenLanguages:[{value:'ja',label:'日语'}];
+ const select=$('language'); select.replaceChildren();
+ list.forEach(item=>{const o=document.createElement('option');o.value=item.value;o.textContent=item.label;select.appendChild(o)});
+ select.value=list.some(x=>x.value===value)?value:(list.some(x=>x.value==='zh')?'zh':list[0].value);
+}
+function pathName(path){
+  return path.replace(/[\\/]+$/,'').split(/[\\/]/).pop();
+}
+function addPendingPaths(paths){
+ for(const path of paths){
+  if(path && !pending.some(p=>p.path===path)) pending.push({name:pathName(path),path});
+ }
+ renderFiles();
+}
+function importDownload(j){
+ addPendingPaths((j.result&&j.result.media_paths)||[]);
+}
+function syncPendingButtons(r){
+  for(const {button,path,label} of r.pendingButtons || []){
+    const added=pending.some(p=>p.path===path);
+    button.disabled=added;
+    button.textContent=added?'已加入待处理':label;
+  }
+}
+function pendingButton(r,path,label){
+  const button=document.createElement('button');
+  button.onclick=()=>addPendingPaths([path]);
+  r.pendingButtons.push({button,path,label});
+  syncPendingButtons(r);
+  return button;
+}
+$('downloadLink').onclick=async()=>{
+ const text=$('shareLink').value.trim(); if(!text){$('downloadNote').textContent='请先填写分享链接或文案';return;}
+ $('downloadLink').disabled=true;
+ try{const obj=await readJson(await fetch('/api/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,output_dir:$('outDir').value.trim(),cookies_file:$('cookiesFile').value.trim()})}));
+ if(obj.error) throw new Error(obj.error); submittedDownloads.add(obj.id); addJob({id:obj.id,name:text,status:obj.status||'wait',kind:'download',stage:'解析链接',progress:0,logs:[],files:[],media:[]}); $('downloadNote').textContent='下载任务已加入队列'; kickPoll();
+ }catch(e){$('downloadNote').textContent='下载失败：'+e.message;}finally{$('downloadLink').disabled=!downloadReady;}
+};
+function updateTaskControls(){
+  const mode=$('taskMode').value || 'recognize', full=mode==='asr';
+  $('sepSettings').style.display=(full || mode==='separate')?'':'none';
+  $('diaSettings').style.display=(full || mode==='diarize')?'':'none';
+  $('sepChain').style.display=full?'':'none'; $('diaChain').style.display=full?'':'none';
+  $('sepModel').disabled=full ? !$('doSep').checked : mode!=='separate';
+  $('diaModel').disabled=full ? !$('doDiarize').checked : mode!=='diarize';
+  const recognizes=mode==='recognize'||full;
+  if(!submitting) $('go').textContent=({recognize:'识别字幕',extract:'抽取音频',separate:'分离人声',diarize:'分割说话人',asr:'运行完整流水线'})[mode];
+  $('qwenNote').style.display=recognizes && $('backend').value==='qwen'?'':'none';
+  $('backend').disabled=!recognizes; $('language').disabled=!recognizes || $('backend').value==='whisper';
+  $('useVad').disabled=!recognizes; $('beam').disabled=!recognizes || $('backend').value==='qwen';
+  $('whisperSettings').style.display=recognizes && $('backend').value==='whisper'?'':'none'; $('asrModel').disabled=!recognizes || $('backend').value!=='whisper';
+  $('sepModel').disabled=$('sepModel').disabled || !separationReady; $('diaModel').disabled=$('diaModel').disabled || !diarizeReady;
+  $('go').disabled=submitting || (typeof backendConnected!=='undefined' && !backendConnected) || !pending.length || (mode==='separate'&&!separationReady) || (mode==='diarize'&&!diarizeReady);
+  if($('backend').value==='whisper') $('language').value='ja';
+  $('taskHint').textContent=({recognize:'生成字幕和文本',extract:'提取音频文件',separate:'生成人声分离音频',diarize:'生成说话人分割结果',asr:'执行识别及所选前后处理'})[mode] || '';
+}
+$('taskMode').onchange=updateTaskControls;
+$('backend').onchange=()=>{ if(typeof setLanguages==='function') setLanguages($('backend').value==='qwen'?'zh':'ja'); else $('language').value=$('backend').value==='qwen'?'zh':'ja'; updateTaskControls(); saveSettings(); };
+/* ---------- 初始化 ---------- */
+let defaultOut = '', defaultSep = '';
+function saveSettings(){
+  try{ localStorage.setItem('jisheng-ui', JSON.stringify({
+    mode:$('taskMode').value, backend:$('backend').value, language:$('language').value, asr:$('asrModel').value, sep:$('doSep').checked, sepModel:$('sepModel').value,
+    dia:$('doDiarize').checked, diaModel:$('diaModel').value,
+    numSpeakers:$('numSpeakers').value, diaMinOverlap:$('diaMinOverlap').value,
+    outDir:$('outDir').value, beam:$('beam').value, glossary:$('glossary').value,
+    vad:$('useVad').checked})); }catch(e){}
+}
+function loadSettings(){
+  try{ return JSON.parse(localStorage.getItem('jisheng-ui') || localStorage.getItem('asrui') || '{}'); }catch(e){ return {}; }
+}
+
+async function init(){
+  try{
+    const d = await (await fetch('/api/models')).json();
+    backendConnected=true;
+    $('connectionBanner').style.display='none';
+    for(const option of $('bgPreset').querySelectorAll('option[hidden]')){
+      option.hidden = !(d.background_presets || []).includes(option.value);
+      if(option.hidden && option.selected){
+        $('bgPreset').value = '';
+        selectBackground();
+      }
+    }
+    $('asrModel').innerHTML = d.asr.map(m=>`<option value="${m.value}">${m.label}</option>`).join('');
+    $('sepModel').innerHTML = d.separation.map(m=>`<option value="${m.value}">${m.label}</option>`).join('');
+    $('diaModel').innerHTML = (d.diarize||[]).map(m=>`<option value="${m.value}">${m.label}</option>`).join('');
+    qwenLanguages=(d.qwen_languages && d.qwen_languages.length)?d.qwen_languages:qwenLanguages; downloadReady=!!d.download_ready; $('downloadLink').disabled=!downloadReady; $('downloadNote').textContent=d.download_note||'';
+    defaultOut = d.default_output || '';
+    defaultSep = d.sep_output || '';
+    $('outDir').placeholder = defaultOut;
+    $('qwenNote').textContent = (d.qwen_note || (d.qwen_ready === false ? 'Qwen 不可用' : '')) + ' 方言无需单独选择。';
+    $('gpuTip').textContent = d.hint || '';
+    if(d.separation_note){
+      $('sepWarn').style.display='block'; $('sepWarn').textContent = d.separation_note;
+    }
+    separationReady=!!d.separation_ready; diarizeReady=!!d.diarize_ready;
+    if(!d.separation_ready){
+      $('doSep').disabled = true;
+      Object.assign($('sepWarn').style,{background:'var(--err-bg)',borderColor:'#F7C1C1',color:'var(--err)'});
+    }
+    if(d.diarize_note){
+      $('diaWarn').style.display='block'; $('diaWarn').textContent = d.diarize_note;
+    }
+    if(!d.diarize_ready){
+      $('doDiarize').disabled = true;
+      Object.assign($('diaWarn').style,{background:'var(--err-bg)',borderColor:'#F7C1C1',color:'var(--err)'});
+    }
+    // 恢复上次的设置
+    const s = loadSettings();
+    if(s.mode) $('taskMode').value=s.mode;
+    if(s.backend) $('backend').value=s.backend;
+    setLanguages(s.language || ($('backend').value==='qwen'?'zh':'ja'));
+    updateTaskControls();
+    if(s.asr!=null) $('asrModel').value = s.asr;
+    if(s.sep!=null){ $('doSep').checked = s.sep; $('sepModel').disabled = !s.sep; }
+    if(s.sepModel!=null) $('sepModel').value = s.sepModel;
+    if(s.dia!=null && !$('doDiarize').disabled){
+      $('doDiarize').checked = s.dia; $('diaModel').disabled = !s.dia;
+    }
+    if(s.diaModel!=null) $('diaModel').value = s.diaModel;
+    if(s.numSpeakers!=null) $('numSpeakers').value = s.numSpeakers;
+    if(s.diaMinOverlap!=null) $('diaMinOverlap').value = s.diaMinOverlap;
+    if(s.outDir!=null) $('outDir').value = s.outDir;
+    if(s.beam!=null) $('beam').value = s.beam;
+    if(s.glossary!=null) $('glossary').value = s.glossary;
+    if(s.vad!=null) $('useVad').checked = s.vad;
+    ['taskMode','backend','language','asrModel','doSep','sepModel','doDiarize','diaModel','numSpeakers',
+     'diaMinOverlap','outDir','beam','glossary','useVad'].forEach(id=>{
+      $(id).addEventListener('change', saveSettings);
+      $(id).addEventListener('input', saveSettings);
+    });
+  }catch(e){
+    $('gpuTip').textContent='无法连接后端：'+e;
+    showConnectionError('工作台服务未连接。请先运行项目里的 jisheng-webui.cmd，再打开 http://127.0.0.1:8760/；已运行时请关闭旧实例后重新启动。');
+  }
+  restoreJobs();
+  refreshResumable();
+}
+async function refreshResumable(){
+  try{
+    const d = await (await fetch('/api/resumable')).json();
+    resumables = d.items || [];
+  }catch(e){ resumables = []; }
+  renderResumable();
+}
+async function restoreJobs(){
+  try{
+    const d = await (await fetch('/api/jobs')).json();
+    const arr = (d.jobs||[]).slice().reverse();   // 老的在前
+    for(const j of arr) addJob(Object.assign({lastReq:null}, j));
+    if(arr.length) kickPoll();
+  }catch(e){}
+}
+function renderResumable(){
+  const box=$('resumeBox');
+  if(!resumables.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  $('resumeList').innerHTML = resumables.map((r,i)=>
+    `<div class="it"><span class="nm">${r.media_name}</span>
+     <span>${r.done}/${r.total} 段 · ${r.percent}%</span>
+     <button class="mini" onclick="resumeJob(${i})">继续</button></div>`).join('');
+}
+async function resumeJob(i){
+  const r = resumables[i]; if(!r) return;
+  try{ await submit({name:r.media_name, path:r.media}, r.opts, r.out_dir); }
+  catch(e){ alert(e.message); return; }
+  resumables.splice(i,1); renderResumable();
+}
+
+/* ---------- 提交 ---------- */
+function baseReq(asr, sep, out, mode=$('taskMode').value || 'recognize'){
+  return {
+    mode, backend: $('backend').value || 'whisper', language: $('language').value || 'ja',
+    asr_model: asr, separate: mode === 'asr' && !!sep,
+    sep_model: mode==='separate' || (mode==='asr' && sep) ? $('sepModel').value : '',
+    vad: $('useVad').checked,
+    beam: parseInt($('beam').value)||5,
+    glossary: $('glossary').value.trim(),
+    diarize: mode === 'asr' && $('doDiarize').checked && !$('doDiarize').disabled,
+    diarize_model: $('diaModel').value,
+    num_speakers: parseInt($('numSpeakers').value)||null,
+    diarize_min_overlap: parseFloat($('diaMinOverlap').value)||0.3,
+    output_dir: out ?? $('outDir').value.trim(),
+  };
+}
+function uploadFile(p, onProgress){
+  return new Promise((res, rej)=>{
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST','/api/upload?name='+encodeURIComponent(p.name));
+    xhr.setRequestHeader('Content-Type','application/octet-stream');
+    xhr.upload.onprogress = e=>{
+      if(e.lengthComputable && onProgress) onProgress(Math.round(e.loaded/e.total*100));
+    };
+    xhr.onload = ()=>{
+      try{ res(JSON.parse(xhr.responseText)); }catch(e){ rej(e); }
+    };
+    xhr.onerror = ()=>rej(new Error('上传失败'));
+    xhr.send(p.file);
+  });
+}
+
+async function submit(p, opts, out){
+  const fd = {...opts, name:p.name, path:p.path, output_dir:out ?? opts.output_dir ?? ''};
+  if(p.file && !p.uploadedPath){
+    const tip = $('upTip');
+    tip.style.display='';
+    try{
+      const u=await uploadFile(p, pc=>tip.textContent=`上传 ${p.name} … ${pc}%`);
+      if(!u || !u.path) throw new Error(u?.error || '上传未返回文件路径');
+      p.uploadedPath=u.path;
+    }finally{ tip.style.display='none'; }
+  }
+  if(p.uploadedPath) fd.path=p.uploadedPath;
+  const res = await readJson(await fetch('/api/run',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(fd)}));
+  if(res?.error) throw new Error(res.error);
+  const ids=res?.ids || (res?.id ? [res.id] : []);
+  if(!ids.length) throw new Error('服务器未返回任务编号');
+  for(const jid of ids) addJob({id:jid, name:p.name, status:'wait', stage:'抽取音频',
+    progress:0, eta:null, logs:[], files:[], error:'', lastReq:fd, opts:fd});
+  kickPoll();
+}
+async function runAll(btn, mode, entries=[...pending]){
+  if(submitting || !entries.length) return;
+  const options=baseReq($('asrModel').value, $('doSep').checked, undefined, mode);
+  submitting=true; btn.disabled=true; const t=btn.textContent; btn.textContent='提交中…';
+  renderFiles();
+  try{
+    for(const p of entries){
+      try{
+        await submit(p, options);
+        pending=pending.filter(item=>item!==p);
+      }catch(e){ p.error=e.message || '提交失败，请重试'; }
+      renderFiles();
+    }
+  }finally{ submitting=false; btn.textContent=t; btn.disabled=false; renderFiles(); }
+}
+$('go').onclick = ()=>runAll($('go'), $('taskMode').value || 'recognize');
+$('goSep').onclick = ()=>runAll($('goSep'), 'separate');
+$('openOut').onclick = ()=>fetch('/api/openfolder?path='+encodeURIComponent($('outDir').value.trim() || defaultOut));
+$('openSep').onclick = ()=>fetch('/api/openfolder?path='+encodeURIComponent(($('outDir').value.trim() || defaultOut).replace(/[\\/]+$/, '') + '/分离'));
+$('chooseFolder').onclick = async ()=>{ $('chooseFolder').disabled=true; try { const response=await fetch('/api/choose-folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initial:$('outDir').value})}); const data=await response.json(); if(!response.ok || data.error) throw new Error(data.error || '选择目录失败'); if(!data.cancelled && data.path){ $('outDir').value=data.path; saveSettings(); } } catch(e){ alert('选择目录失败：'+e.message); } finally { $('chooseFolder').disabled=false; } };
+$('stopAll').onclick = async ()=>{
+  const ids = jobs.filter(j=>j.status==='run'||j.status==='wait').map(j=>j.id);
+  if(!ids.length) return;
+  await fetch('/api/stop',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ids})});
+};
+$('abandonAll').onclick = ()=>{
+  abandonJobs(jobs.filter(j=>['wait','run','stopped','error'].includes(j.status)).map(j=>j.id));
+};
+
+/* ---------- 放弃：丢弃任务并删除检查点（不可恢复） ---------- */
+async function abandonJobs(ids){
+  if(!ids || !ids.length) return;
+  if(!confirm('放弃这 '+ids.length+' 个任务？\n\n'
+    +'· 会删除它们的断点进度，之后无法再「继续」\n'
+    +'· 已经生成的字幕 / 文本文件不受影响')) return;
+  try{
+    await fetch('/api/abandon',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+  }catch(e){}
+  for(const id of ids) dropJob(id);
+}
+/* 把任务从界面和数据里彻底移除 */
+function dropJob(id){
+  jobs = jobs.filter(j=>j.id!==id);
+  const r = els[id];
+  if(r){ r.root.remove(); delete els[id]; }
+  if(!jobs.length) $('jobs').innerHTML = '<div class="empty queue-empty"><strong>准备好开始了吗？</strong><p>导入素材后，就可以创建第一个任务。</p><div class="workflow"><span><b>01</b> 导入素材</span><i>→</i><span><b>02</b> 执行所选功能</span><i>→</i><span><b>03</b> 标注与导出</span></div></div>';
+  $('stopAll').style.display =
+    jobs.some(j=>j.status==='run'||j.status==='wait') ? '' : 'none';
+  $('abandonAll').style.display =
+    jobs.some(j=>['wait','run','stopped','error'].includes(j.status)) ? '' : 'none';
+  /* 任务被拿掉之后 updateJob 再也不会为它执行 —— 导出按钮的解锁必须在这里
+     补一刀，否则「放弃一个还在跑的导出」会把按钮永久锁死（`abandonJobs` 也是
+     走这里）。 */
+  syncExportBtn();
+  refreshResumable();
+}
+
+/* ---------- 任务卡片：只创建一次，之后增量更新 ---------- */
+function addJob(j){
+  if(jobs.some(x=>x.id===j.id)) return;
+  jobs.push(j);
+  const empty = $('jobs').querySelector('.empty'); if(empty) empty.remove();
+  const root = document.createElement('div');
+  root.className='job';
+  root.innerHTML = `
+    <div class="hd">
+      <span class="nm"></span>
+      <span class="badge b-wait">排队中</span>
+      <button class="mini spk" style="display:none">说话人标注</button>
+      <button class="mini stop" style="display:none">停止</button>
+      <button class="mini abandon" style="display:none">放弃</button>
+    </div>
+    <div class="steps">${['抽取音频','人声分离','说话人分割','识别中','完成']
+      .map(s=>`<div class="step">${s}</div>`).join('')}</div>
+    <div class="prog">
+      <div class="bar"><i></i></div>
+      <span class="pct">0%</span>
+      <span class="eta"></span>
+    </div>
+    <div class="note" style="display:none"></div>
+    <div class="log"></div>
+    <div class="acts"></div>`;
+  root.querySelector('.nm').textContent = j.name;
+  $('jobs').appendChild(root);
+
+  const rec = {
+    root, badge: root.querySelector('.badge'),
+    steps: [...root.querySelectorAll('.step')],
+    bar: root.querySelector('.bar'), fill: root.querySelector('.bar>i'),
+    pct: root.querySelector('.pct'), eta: root.querySelector('.eta'),
+    note: root.querySelector('.note'),
+    log: root.querySelector('.log'), acts: root.querySelector('.acts'),
+    stopBtn: root.querySelector('.stop'), shown: 0, lastStage: null,
+    abandonBtn: root.querySelector('.abandon'),
+    spkBtn: root.querySelector('.spk'),
+  };
+  rec.stopBtn.onclick = async ()=>{
+    rec.stopBtn.disabled = true;
+    await fetch('/api/stop',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ids:[j.id]})});
+  };
+  rec.abandonBtn.onclick = ()=>abandonJobs([j.id]);
+  rec.spkBtn.onclick = ()=>openSpeakers(j.id);
+  els[j.id] = rec;
+  updateJob(j);
+}
+
+function taskStepIndices(mode, opts){
+  if(mode==='extract') return [0,4];
+  if(mode==='separate') return [0,1,4];
+  if(mode==='recognize') return [0,3,4];
+  if(mode==='diarize') return [0,2,4];
+  if(mode==='asr') return [0,...(opts.separate?[1]:[]),...(opts.diarize?[2]:[]),3,4];
+  return [0,1,2,3,4];
+}
+function updateJob(j){
+  const r = els[j.id]; if(!r) return;
+  if(j.kind==='download' && j.status==='done' && submittedDownloads.has(j.id) && !importedDownloads.has(j.id)){importDownload(j); importedDownloads.add(j.id);}
+  const idx = ['抽取音频','人声分离','说话人分割','识别中','完成'].indexOf(j.stage);
+
+  r.root.className = 'job' + (j.status==='run'?' run':'');
+  const nameEl=r.root.querySelector('.hd .nm'); if(nameEl && j.name) nameEl.textContent=j.name;
+  const map = {done:['b-ok','完成'], error:['b-err','失败'],
+               run:['b-run','进行中'], wait:['b-wait','排队中'], stopped:['b-stop','已停止'],
+               abandoned:['b-stop','已放弃']};
+  const [cls,txt] = map[j.status] || ['b-wait', j.status];
+  r.badge.className = 'badge '+cls; r.badge.textContent = txt;
+
+  r.stopBtn.style.display = (j.status==='run'||j.status==='wait') ? '' : 'none';
+  r.stopBtn.disabled = false;
+  /* 放弃：排队中/进行中/已停止/失败的都能放弃（done 的已经出片，不给放弃） */
+  r.abandonBtn.style.display =
+    ['wait','run','stopped','error'].includes(j.status) ? '' : 'none';
+  r.abandonBtn.disabled = false;
+  /* 识别结束（或已停止/失败）才能标注；排队中还没结果。
+     导出任务没有「说话人标注」这一步（它的输入就是标注结果），不给这个按钮。 */
+  r.spkBtn.style.display=j.can_label_speakers ? '' : 'none';
+
+  if(j.kind==='download'){ const labels=['解析链接','下载中','合并音视频','完成']; r.steps.forEach((el,i)=>{el.textContent=labels[i]||'';el.style.display=i<labels.length?'':'none';el.className='step'+(j.status==='done'||i<labels.indexOf(j.stage)?' done':i===labels.indexOf(j.stage)&&j.status==='run'?' act':'');}); } else r.steps.forEach((el,i)=>{
+    el.style.display=taskStepIndices(j.opts && j.opts.mode, j.opts || {}).includes(i)?'':'none';
+    el.className = 'step' + ((j.status==='done'||i<idx) ? ' done'
+                              : (i===idx && j.status==='run' ? ' act' : ''));
+  });
+
+  const p = Math.max(0, Math.min(1, j.progress||0));
+  r.fill.style.width = (p*100).toFixed(1)+'%';
+  r.bar.className = 'bar' + (j.status==='done'?' okbar':(j.status==='stopped'?' warnbar':''));
+  r.pct.textContent = (p*100).toFixed(0)+'%';
+  if(j.status==='done') r.eta.textContent = '已完成';
+  else if(j.status==='stopped') r.eta.textContent = '已停止';
+  else if(j.status==='run') r.eta.textContent = fmtEta(j.eta);
+  else r.eta.textContent = '';
+
+  /* 阶段内提示（如「分离中，已用时 1分23秒」） */
+  if(j.progress_note){ r.note.style.display=''; r.note.textContent = j.progress_note; }
+  else{ r.note.style.display='none'; r.note.textContent=''; }
+
+  /* 日志：只追加新行，绝不整体重建 —— 这样不会折叠、滚动位置也不丢 */
+  const logs = j.logs || [];
+  if(logs.length < r.shown){ r.log.innerHTML=''; r.shown=0; }   // 任务被重置
+  if(logs.length > r.shown){
+    const atBottom = r.log.scrollTop + r.log.clientHeight >= r.log.scrollHeight - 24;
+    const frag = document.createDocumentFragment();
+    for(let i=r.shown;i<logs.length;i++){
+      const d = document.createElement('div');
+      const s = logs[i];
+      d.textContent = s;
+      if(/^\[!\]|^  \[X\]|^\[X\]|Traceback|Error/i.test(s)) d.className='stderr';
+      frag.appendChild(d);
+    }
+    r.log.appendChild(frag);
+    r.shown = logs.length;
+    if(atBottom) r.log.scrollTop = r.log.scrollHeight;         // 自动吸底
+  }
+
+  /* 结果区：字幕可预览/下载，分离音频可内嵌试听 */
+  const want = JSON.stringify([j.files,j.status,j.error,j.out_dir]);
+  if(r.lastActions !== want){
+    r.lastActions = want;
+    r.acts.innerHTML='';
+    r.pendingButtons=[];
+    (j.files||[]).forEach(f=>{
+      if(j.kind==='download' || f.kind==='视频'){
+        r.acts.appendChild(pendingButton(r,f.path,'加入待处理'));
+        const dl=document.createElement('button'); dl.textContent='下载视频'; dl.onclick=()=>window.open('/api/download?id='+j.id+'&name='+encodeURIComponent(f.name),'_blank'); r.acts.appendChild(dl);
+        const ob=document.createElement('button'); ob.textContent='打开目录'; ob.onclick=()=>fetch('/api/openfolder?path='+encodeURIComponent(f.path.replace(/[\\/][^\\/]*$/, ''))); r.acts.appendChild(ob);
+      }else if(f.kind==='人声' || f.kind==='伴奏' || f.kind==='音频'){
+        const box=document.createElement('div');
+        box.className='audiobox';
+        const label=document.createElement('div');
+        label.className='audio-label'; label.textContent='🎧 '+f.kind+' · '+f.name;
+        const audio=document.createElement('audio');
+        audio.controls=true; audio.preload='none';
+        audio.src='/api/audio?path='+encodeURIComponent(f.path);
+        const download=document.createElement('button');
+        download.className='mini'; download.textContent='下载音频';
+        download.onclick=()=>window.open('/api/download?id='+j.id+'&name='+encodeURIComponent(f.name),'_blank');
+        box.appendChild(label); box.appendChild(audio); box.appendChild(download);
+        if(f.path) box.appendChild(pendingButton(r,f.path,'用此结果继续处理'));
+        r.acts.appendChild(box);
+      }else{
+        const b=document.createElement('button');
+        b.textContent='预览 '+f.name;
+        b.onclick=()=>preview(j.id,f.name);
+        r.acts.appendChild(b);
+        const dl=document.createElement('button');
+        dl.textContent='下载';
+        dl.onclick=()=>window.open(`/api/download?id=${j.id}&name=${encodeURIComponent(f.name)}`,'_blank');
+        r.acts.appendChild(dl);
+      }
+    });
+    if(j.out_dir){
+      const ob=document.createElement('button');
+      ob.textContent='打开输出目录';
+      ob.onclick=()=>fetch('/api/openfolder?path='+encodeURIComponent(j.out_dir));
+      r.acts.appendChild(ob);
+    }
+    if(j.status==='stopped' && j.kind!=='download'){
+      const b=document.createElement('button');
+      b.className='conbtn'; b.textContent='继续上次进度';
+      b.onclick=()=>resumeInline(j);
+      r.acts.appendChild(b);
+    }
+    if(j.error){
+      const d=document.createElement('div');
+      d.className='warnbox';
+      d.style.cssText='background:var(--err-bg);border-color:#F7C1C1;color:var(--err);flex:1 1 100%';
+      d.textContent = j.error;
+      r.acts.appendChild(d);
+    }
+  }
+
+  /* 导出任务的结果也往标注面板的「导出训练集」区同步一份 ——
+     用户在面板上点的导出，结果就该出现在面板上（任务卡片那边只是个进度条）。 */
+  if(j.kind==='export') renderExport(j);
+}
+
+async function resumeInline(j){
+  const req = j.lastReq || {};
+  const body = Object.assign({}, req);
+  const res = await (await fetch('/api/run',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  if(res.error){ alert(res.error); return; }
+  const ids = res.ids || [res.id];
+  for(const jid of ids) addJob({id:jid, name:j.name, status:'wait', stage:'抽取音频',
+    progress:0, eta:null, logs:[], files:[], error:'', lastReq:req});
+  kickPoll();
+}
+
+/* ---------------- 说话人标注 ---------------- */
+let spk = null;
+let lastPreview = null;   // 最近预览的文件名；重写字幕后用它刷新预览
+
+/* 统一的响应读取：先判 r.ok，读不出 JSON 就用 HTTP 状态兜底。
+   服务端出错时常常是空体或 HTML，先 r.json() 会先抛，用户只看到
+   「Unexpected token」而不是真正的原因。 */
+async function readJson(r){
+  let obj = null;
+  try{ obj = await r.json(); }catch(e){ obj = null; }
+  if(!r.ok){
+    const msg = (obj && obj.error) ? obj.error : ('HTTP ' + r.status);
+    const err = new Error(msg);
+    err.status = r.status;
+    err.body = obj;
+    throw err;
+  }
+  return obj;
+}
+
+function fmtClock(t){
+  const m = Math.floor(t/60), s = Math.floor(t%60);
+  return m + ':' + String(s).padStart(2,'0');
+}
+
+async function openSpeakers(jid){
+  await loadWorkdirs();
+  try{
+    const r = await fetch('/api/speakers?job=' + encodeURIComponent(jid));
+    const obj = await readJson(r);
+    obj.job = jid;
+    spk = obj;
+    $('spkCard').style.display = '';
+    $('spkWork').value = obj.work_name || '';
+    await loadRegistry();          // 补全与「并入/新建」提示都要库里的名字
+    renderSpeakers();
+    $('spkCard').scrollIntoView({behavior:'smooth'});
+  }catch(e){ alert('打不开标注面板：' + e.message); }
+}
+
+async function openSpeakersByWork(name){
+  try{
+    const r = await fetch('/api/speakers?work=' + encodeURIComponent(name));
+    const obj = await readJson(r);
+    obj.job = '';
+    spk = obj;
+    $('spkCard').style.display = '';
+    $('spkWork').value = obj.work_name || '';
+    await loadRegistry();
+    renderSpeakers();
+    $('spkCard').scrollIntoView({behavior:'smooth'});
+  }catch(e){ alert('打不开标注面板：' + e.message); }
+}
+
+async function loadWorkdirs(){
+  const sel = $('spkOpen');
+  try{
+    const r = await fetch('/api/workdirs');
+    const obj = await readJson(r);
+    const keep = sel.value;
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = '— 打开已有检查点 —';
+    sel.replaceChildren(ph);
+    for(const w of (obj.items || [])){
+      const o = document.createElement('option');
+      o.value = w.work;
+      o.textContent = w.work + (w.work_name ? ' · ' + w.work_name : '')
+                    + (w.named ? ' (' + w.named + ' 已命名)' : '');
+      sel.appendChild(o);
+    }
+    sel.value = keep;
+  }catch(e){ /* 下拉失败不影响主流程 */ }
+}
+
+/* 逐句改判下拉用的选项：value 必须是**聚类键**（o.id），不是显示名。
+   提交显示名会让后端 ensure_clusters 造出一个 clusters 里没有的幽灵键：
+   那句从所有列表里消失，聚类改名后字幕里留的还是旧名字。
+   textContent 用 [label] name 即可 —— textContent 是纯文本，
+   这里的方括号不会被当 HTML 解析；带上 label 是为了区分同名（已合并）的两个聚类。 */
+function spkTargetOptionText(o){
+  return '[' + o.label + ']' + (o.name ? ' ' + o.name : '');
+}
+
+/* 目标下拉：所有已命名角色 + [?] + 新建角色…（提交值 new:<名字>） */
+function buildTargetSelect(current){
+  const sel = document.createElement('select');
+  const blank = document.createElement('option');
+  blank.value = '';
+  blank.textContent = '改判到…';
+  sel.appendChild(blank);
+  for(const o of (spk.clusters || [])){
+    if(!o.name) continue;              // 没命名的聚类不是改判目标
+    const opt = document.createElement('option');
+    opt.value = o.id;
+    opt.textContent = spkTargetOptionText(o);
+    sel.appendChild(opt);
+  }
+  const unknown = document.createElement('option');
+  unknown.value = '?';
+  unknown.textContent = '未判断（?）';
+  sel.appendChild(unknown);
+  const mk = document.createElement('option');
+  mk.value = '__new__';
+  mk.textContent = '新建角色…';
+  sel.appendChild(mk);
+  // 预选当前值：直接在 options 上扫，不要用字符串拼 querySelector ——
+  // current 来自聚类键/角色名，名字里带 `"` 会拼出非法选择器直接抛异常。
+  if(current){
+    for(const o of sel.options){
+      if(o.value === current){ sel.value = current; break; }
+    }
+  }
+  return sel;
+}
+
+async function reassignSegment(index, selectEl){
+  let to = selectEl.value;
+  if(!to) return;
+  if(to === '__new__'){
+    const name = window.prompt('新角色名（留空 = 未判断 ?）', '');
+    if(name === null){ selectEl.value = ''; return; }
+    const trimmed = name.trim();
+    to = trimmed ? ('new:' + trimmed) : '?';
+  }
+  try{
+    const r = await fetch('/api/segments/reassign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({job: spk.job, work: spk.work,
+                            work_name: $('spkWork').value.trim(),
+                            index: index, to: to})});
+    await readJson(r);
+  }catch(e){
+    alert('改判失败：' + e.message);
+    selectEl.value = '';
+    return;
+  }
+  await reloadSpeakers();
+  if(selected && lastPreview) preview(selected, lastPreview);
+}
+
+/* 一行「#行号 时间 文本 + 目标下拉」 */
+function segmentRow(seg, current){
+  const row = document.createElement('div');
+  row.className = 'seg';
+  const idx = document.createElement('span');
+  idx.className = 'idx';
+  idx.textContent = '#' + seg.i;
+  const tm = document.createElement('span');
+  tm.className = 'tm';
+  tm.textContent = fmtClock(seg.start);
+  const tx = document.createElement('span');
+  tx.className = 'tx';
+  tx.textContent = seg.text;
+  tx.title = seg.text;
+  const sel = buildTargetSelect(current || '');
+  sel.onchange = () => reassignSegment(seg.i, sel);
+  row.appendChild(idx);
+  row.appendChild(tm);
+  row.appendChild(tx);
+  row.appendChild(sel);
+  return row;
+}
+
+function segmentsDetails(title, segs, current){
+  const det = document.createElement('details');
+  det.className = 'segs';
+  const sum = document.createElement('summary');
+  sum.textContent = title;
+  det.appendChild(sum);
+  for(const s of segs) det.appendChild(segmentRow(s, current));
+  return det;
+}
+
+/* 「下一步」提示：标注完最常问的就是「然后呢」。面板很长、导出区在屏幕外，
+   光靠用户自己往下找，容易以为「是不是还没做完」。所以把下一步写在面板顶部，
+   并给一个跳到导出区的按钮。 */
+function renderNextStep(){
+  const box = $('spkNext');
+  if(!box) return;
+  box.replaceChildren();
+  if(!spk) return;
+  const cl = spk.clusters || [];
+  const total = cl.length;
+  const named = cl.filter(c => (c.name || '').trim()).length;
+  const unnamed = total - named;
+  const t = document.createElement('span');
+  if(!total){
+    t.textContent = '这一集没有识别出说话人，没有可标注的聚类。';
+  } else if(!named){
+    t.textContent = '还没命名：' + total
+      + ' 个聚类都在等名字 —— 听下面的试听片段，把角色名填进卡片后回车即保存。';
+  } else if(unnamed){
+    t.textContent = '已命名 ' + named + '/' + total + '，还有 ' + unnamed
+      + ' 个没命名（没名字的片段会进 _未命名\\，不进训练集）。';
+  } else {
+    t.textContent = '都命名好了（' + total + '/' + total + '）—— 下一步：导出训练集。';
+  }
+  box.appendChild(t);
+  // 没有命名的角色时不会生成可训练标注。
+  if(!named) return;
+  const go = document.createElement('button');
+  go.className = 'mini';
+  go.id = 'spkGoExport';
+  go.type = 'button';
+  go.textContent = '去导出训练集 ↓';
+  go.onclick = () => {
+    const ex = $('spkExport');
+    if(ex) ex.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+  box.appendChild(go);
+}
+
+function renderSpeakers(){
+  const box = $('spkList');
+  box.replaceChildren();
+  spkHintRefreshers = [];
+  renderNextStep();
+  if(!spk) return;
+  const unk = spk.unknown || {n: 0, segments: []};
+  const oth = spk.others || {n: 0, segments: []};
+  $('spkTip').textContent = '共 ' + spk.clusters.length + ' 个说话人'
+    + (unk.n ? '，另有 ' + unk.n + ' 句无法判断归属（[?]）' : '')
+    + (oth.n ? '，' + oth.n + ' 句改判到了新建角色' : '')
+    + (spk.source ? '；试听源：' + spk.source : '；没有可试听的音频（试听片段无法生成）');
+
+  for(let ci=0; ci<spk.clusters.length; ci++){
+    const c = spk.clusters[ci];
+    const el = document.createElement('div');
+    el.className = 'spk';
+    const hd = document.createElement('div');
+    hd.className = 'hd';
+    const b = document.createElement('b');
+    b.textContent = c.label + (c.name ? ' → ' + c.name : '');
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = c.n_segments + ' 句 · ' + Math.round(c.total_s) + ' 秒';
+    hd.appendChild(b);
+    hd.appendChild(meta);
+    el.appendChild(hd);
+
+    const clips = document.createElement('div');
+    clips.className = 'clips';
+    if(!c.clips.length){
+      const none = document.createElement('div');
+      none.className = 'clip';
+      none.textContent = '没有 3 秒以上的干净片段可供试听';
+      clips.appendChild(none);
+    }
+    for(const k of c.clips){
+      const row = document.createElement('div');
+      row.className = 'clip';
+      const lab = document.createElement('span');
+      lab.className = 'cl';
+      lab.textContent = '#' + k.n + ' ' + fmtClock(k.start) + ' ('
+        + k.dur.toFixed(1) + 's)' + (k.overlap ? ' ·有重叠' : '');
+      const a = document.createElement('audio');
+      a.controls = true;
+      a.preload = 'none';
+      a.src = '/api/clip?job=' + encodeURIComponent(spk.job)
+            + '&work=' + encodeURIComponent(spk.work)
+            + '&spk=' + encodeURIComponent(c.id) + '&n=' + k.n;
+      row.appendChild(lab);
+      row.appendChild(a);
+      clips.appendChild(row);
+    }
+    el.appendChild(clips);
+
+    const row = document.createElement('div');
+    row.className = 'spk-row';
+    const input = document.createElement('input');
+    input.className = 'nm';
+    input.placeholder = '输入角色名后回车';
+    input.setAttribute('list', 'spkNames');   // 库中已有角色名的补全
+    const m = c.match || null;
+    /* 预填只在 auto 档（≥ 库里的 auto 阈值，默认 0.65）**且一对一确实配上了它**
+       时发生；suggest 档（默认 0.45~0.65）与没抢到的情况都只进候选下拉 ——
+       输入框里绝不是既成事实，用户还要点「确认」/回车才写盘。 */
+    const suggested = (m && m.band === 'auto' && m.auto) ? m.auto : '';
+    input.value = c.name || suggested;
+    const ok = document.createElement('button');
+    ok.textContent = '确认';
+    const sel = document.createElement('select');
+    sel.className = 'merge';
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = '合并到…';
+    sel.appendChild(opt0);
+    for(let oi=0; oi<spk.clusters.length; oi++){
+      const o = spk.clusters[oi];
+      if(oi === ci || !o.name) continue;   // 没命名的聚类没法当合并目标
+      const opt = document.createElement('option');
+      // 合并的语义就是「共用名字」，所以这里提交显示名（不是聚类键）。
+      // 同名聚类此时已经合并，不会再产生第二个同名选项。
+      opt.value = o.name;
+      opt.textContent = o.name;
+      sel.appendChild(opt);
+    }
+    /* 库候选：suggest 档**只出现在这里**（不填进输入框）；auto 档但一对一
+       没抢到时同样是手动选项。选中 = 并入该角色，与面板既有的合并语义一致。 */
+    if(m && m.band !== 'none' && m.page){
+      const opt = document.createElement('option');
+      opt.value = m.page;
+      opt.textContent = '库候选：' + m.page + '（' + fmtScore(m.score) + '）';
+      sel.appendChild(opt);
+    }
+    const sg = document.createElement('div');
+    sg.className = 'sg';
+    const mg = document.createElement('div');
+    mg.className = 'mg';
+    /* 两行提示都只描述**输入框此刻的值**：用户把建议改成别的名字之后，
+       还说「库建议：X」就是假话。 */
+    const refreshHint = () => {
+      const name = (input.value || '').trim();
+      const show = m && m.band !== 'none' && m.page && (!name || name === m.page);
+      if(!show){
+        sg.textContent = '';
+      }else if(m.auto){
+        sg.textContent = '库建议：' + m.page + '（相似度 ' + fmtScore(m.score)
+                       + '）— 点「确认」才会写入，可改';
+      }else{
+        sg.textContent = '库候选：' + m.page + '（相似度 ' + fmtScore(m.score)
+                       + '）— 未自动填入，需手动确认';
+      }
+      mg.textContent = name ? mergeHintText(name) : '';
+    };
+    const commit = async () => {
+      await assignNames({[c.id]: input.value});
+    };
+    ok.onclick = commit;
+    input.addEventListener('keydown', e => { if(e.key === 'Enter') commit(); });
+    input.addEventListener('input', refreshHint);
+    spkHintRefreshers.push(refreshHint);
+    sel.onchange = async () => {
+      if(!sel.value) return;
+      await assignNames({[c.id]: sel.value});
+    };
+    row.appendChild(input);
+    row.appendChild(ok);
+    row.appendChild(sel);
+    el.appendChild(row);
+    el.appendChild(sg);
+    el.appendChild(mg);
+    refreshHint();
+
+    const segs = c.segments || [];
+    if(segs.length){
+      el.appendChild(segmentsDetails('逐句改判（' + segs.length + ' 句）',
+                                     segs, c.id));
+    }
+    box.appendChild(el);
+  }
+
+  if(unk.n && unk.segments.length){
+    const el = document.createElement('div');
+    el.className = 'spk';
+    const hd = document.createElement('div');
+    hd.className = 'hd';
+    const b = document.createElement('b');
+    b.textContent = '[?] 未判断归属';
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = unk.n + ' 句';
+    hd.appendChild(b);
+    hd.appendChild(meta);
+    el.appendChild(hd);
+    const hint = document.createElement('div');
+    hint.className = 'unknown-hd';
+    hint.textContent = '这些句子分割没给出可靠归属，可以直接改判到某个角色：';
+    el.appendChild(hint);
+    el.appendChild(segmentsDetails('逐句改判（' + unk.segments.length + ' 句）',
+                                   unk.segments));
+    box.appendChild(el);
+  }
+
+  // 「新建角色…」建出来的键不在分割结果里，所以没有卡片（见 webui.api_speakers 的
+  // others）。后端把它列出来了，前端就必须渲染 —— 只给一个数字的话，用户没有任何
+  // 路径把这句改回去，等于单向门。这里不传 current：它的键是 new:<名字>，
+  // 下拉里本来就没有对应选项，传了反而可能拼出非法值。
+  if(oth.n && oth.segments.length){
+    const el = document.createElement('div');
+    el.className = 'spk';
+    const hd = document.createElement('div');
+    hd.className = 'hd';
+    const b = document.createElement('b');
+    b.textContent = '[其它] 改判到了新建角色';
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = oth.n + ' 句';
+    hd.appendChild(b);
+    hd.appendChild(meta);
+    el.appendChild(hd);
+    const hint = document.createElement('div');
+    hint.className = 'unknown-hd';
+    hint.textContent = '这些句子被改判到了新建角色，分割结果里没有它们的时段，'
+                     + '所以不单独出卡片。改判回某个真实角色即可撤销：';
+    el.appendChild(hint);
+    el.appendChild(segmentsDetails('逐句改判（' + oth.segments.length + ' 句）',
+                                   oth.segments));
+    box.appendChild(el);
+  }
+}
+
+/* ---------- 角色库（跨集认人的历史）----------
+   面板在这里做三件事：列出库里已有的作品/角色、给角色名输入框做补全、
+   改名与删除。**一律 DOM 构造 + textContent**：作品名与角色名都是用户输入，
+   拼进 innerHTML 就是自 XSS（Task 6 的 P7 已经踩过一次）。 */
+function regPageInfo(name){
+  // → {own: 本作品里已有?, n_episodes, other: 库里别的作品有同名?}
+  const work = ($('spkWork').value || '').trim();
+  const out = {own: false, n_episodes: 0, other: false};
+  if(!name || !spkReg) return out;
+  for(const w of (spkReg.works || [])){
+    for(const p of (w.pages || [])){
+      if(p.page !== name) continue;
+      if(w.work === work){ out.own = true; out.n_episodes = p.n_episodes || 0; }
+      else out.other = true;
+    }
+  }
+  return out;
+}
+
+/* 「填一个已存在的名字 = 并入该角色」是正常路径（把本集聚类并进历史角色），
+   但用户必须看得出这一下是**并入**而不是新建 —— 库按 (作品,角色) 索引，
+   所以同名不同作品是新建，得说清楚。 */
+function mergeHintText(name){
+  const work = ($('spkWork').value || '').trim();
+  if(!work){
+    return '还没填作品名：名字会进本集字幕，但不会入库（跨集认人要用作品名）';
+  }
+  const info = regPageInfo(name);
+  if(info.own){
+    return '将并入已有角色「' + name + '」（本作品已入库 ' + info.n_episodes + ' 集）';
+  }
+  if(info.other){
+    return '将新建角色「' + name + '」（库里同名角色属于别的作品）';
+  }
+  return '将新建角色「' + name + '」';
+}
+
+function fillNameDatalist(){
+  const dl = $('spkNames');
+  if(!dl) return;
+  dl.replaceChildren();
+  const work = ($('spkWork').value || '').trim();
+  const names = [];
+  const collect = (onlyWork) => {
+    for(const w of ((spkReg && spkReg.works) || [])){
+      if(onlyWork && work && w.work !== work) continue;
+      for(const p of (w.pages || [])){
+        if(p.page && names.indexOf(p.page) < 0) names.push(p.page);
+      }
+    }
+  };
+  collect(true);
+  if(!names.length) collect(false);   // 本作品还没入库：给出全库名字供参考
+  for(const nm of names){
+    const o = document.createElement('option');
+    o.value = nm;
+    dl.appendChild(o);
+  }
+}
+
+async function loadRegistry(){
+  try{
+    const r = await fetch('/api/registry');
+    spkReg = await readJson(r);
+  }catch(e){
+    spkReg = null;                    // 库读不到不影响标注主流程
+  }
+  renderRegistry();
+  fillNameDatalist();
+  /* 体检跟着库一起刷新（改名/删除都会走到这里）：不跟着刷的话，删掉一个角色后
+     面板上还挂着旧数字，那比不显示更糟 —— 用户会照着一份已经不成立的结论
+     去调阈值。 */
+  await loadHealth();
+}
+
+async function loadHealth(){
+  spkHealthErr = null;
+  try{
+    const r = await fetch('/api/registry/health');
+    spkHealth = await readJson(r);
+  }catch(e){
+    spkHealth = null;
+    spkHealthErr = (e && e.message) || '未知原因';
+  }
+  renderHealth();
+}
+
+/* 分数：`null`/`undefined`（= 样本不够，压根没有配对）与 `0`（= 真算出来是 0）
+   是**两件事**。写成 `(v||0).toFixed(3)` 会把「没有同角色配对」显示成 0.000 ——
+   那看着像「算过了，相似度 0」，是彻底的假信息。缺数据就说「无数据」。
+   （不复用上面那个 `fmtScore`：它把没有值渲染成 `?`，对「库建议 0.7? 」够用，
+   但体检这一节的全部意义就是让人分清「没算」和「算出来是 0」，太含糊。） */
+function fmtHealthScore(v){
+  return (typeof v === 'number' && isFinite(v)) ? v.toFixed(3) : '无数据';
+}
+
+function isScore(v){
+  return typeof v === 'number' && isFinite(v);
+}
+
+/* 一句人话结论。三种情况：样本不够 / 有间隔（阈值有依据）/ 没间隔（阈值偏松）。
+   「样本不够」必须说清**缺哪一半**：只缺跨角色配对时该做的是多标几个角色，
+   而不是再多录几集同一个角色。 */
+function healthVerdict(h){
+  const same = h.n_pairs_same || 0;
+  const diff = h.n_pairs_diff || 0;
+  if(!same || !diff || !isScore(h.same_min) || !isScore(h.diff_max)
+     || !isScore(h.gap)){
+    const miss = [];
+    if(!same) miss.push('同一个角色至少要有 2 条向量');
+    if(!diff) miss.push('至少要 2 个角色');
+    return '样本还不够：' + (miss.length ? miss.join('、') + '。' : '')
+      + '这两个数现在给不出来（不是 0 分，是还没算出来）。多标几集再来看。';
+  }
+  if(h.gap > 0){
+    return '可分性良好：同角色最低分比不同角色最高分高 ' + h.gap.toFixed(3)
+      + '，现有阈值有依据。';
+  }
+  return '阈值可能偏松：不同角色最高分（' + h.diff_max.toFixed(3)
+    + '）已经追平/超过同角色最低分（' + h.same_min.toFixed(3)
+    + '），照现在的阈值会把不同的人认成同一个。';
+}
+
+function healthRow(label, value){
+  const r = document.createElement('div');
+  r.className = 'regr';
+  const nm = document.createElement('span');
+  nm.className = 'nm';
+  nm.textContent = label;
+  const meta = document.createElement('span');
+  meta.className = 'meta';
+  meta.textContent = value;
+  r.appendChild(nm);
+  r.appendChild(meta);
+  return r;
+}
+
+/* 一律 textContent + DOM 构造：`same_min_page` / `diff_pair` 都是**角色名**，
+   和角色库区那些名字一样是用户数据。 */
+function renderHealth(){
+  const box = $('spkHealth');
+  if(!box) return;
+  box.replaceChildren();
+  const h = document.createElement('h3');
+  h.textContent = '声纹体检（阈值可分性）';
+  box.appendChild(h);
+
+  if(spkHealthErr){
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = '体检读不到结果：' + spkHealthErr + '（不影响标注与导出）';
+    box.appendChild(e);
+    return;
+  }
+  if(!spkHealth){
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = '还没体检。';
+    box.appendChild(e);
+    return;
+  }
+  const d = spkHealth;
+  const hint = document.createElement('div');
+  hint.className = 'tip';
+  hint.textContent = '按 ' + (d.n_segments || 0) + ' 条向量 / ' + (d.n_pages || 0)
+    + ' 个角色，算了 ' + (d.n_pairs_same || 0) + ' 对同角色、'
+    + (d.n_pairs_diff || 0) + ' 对不同角色。';
+  box.appendChild(hint);
+
+  // 两个分数**都**算不出来时（样本不够），不铺 4 行「无数据」——那看着像坏了，
+  // 还把下面的导出区挤出屏幕。收成一行说清「不是 0 分，是还没算」。
+  // 只要有**一个**分数可用就照常把几行铺出来（部分数据也比没有好）。
+  const hasScores = isScore(d.same_min) || isScore(d.diff_max);
+  if(!hasScores){
+    box.appendChild(healthRow('可比性分数', '样本还不够，先不算（不是 0 分）'));
+  } else {
+    const sameNote = (isScore(d.same_min) && d.same_min_page)
+      ? '（最低的是「' + d.same_min_page + '」）' : '';
+    const pair = d.diff_pair;
+    const diffNote = (isScore(d.diff_max) && pair && pair.length >= 2)
+      ? '（最像的是「' + pair[0] + '」和「' + pair[1] + '」）' : '';
+    box.appendChild(healthRow('同角色最低分', fmtHealthScore(d.same_min) + sameNote));
+    box.appendChild(healthRow('不同角色最高分', fmtHealthScore(d.diff_max) + diffNote));
+    box.appendChild(healthRow('间隔（越高越安全）', fmtHealthScore(d.gap)));
+    const sg = d.suggested;
+    box.appendChild(healthRow('建议阈值', sg
+      ? fmtHealthScore(sg.auto) + '（保守 ' + fmtHealthScore(sg.suggest) + '）'
+      : '暂时给不出（没有间隔）'));
+  }
+  const th = d.thresholds || {};
+  box.appendChild(healthRow('当前阈值',
+    fmtHealthScore(th.auto) + ' / 候选 ' + fmtHealthScore(th.suggest)));
+
+  const v = document.createElement('div');
+  v.className = 'tip';
+  v.textContent = healthVerdict(d);
+  box.appendChild(v);
+}
+
+function renderRegistry(){
+  const box = $('spkReg');
+  if(!box) return;
+  box.replaceChildren();
+  const h = document.createElement('h3');
+  const works = (spkReg && spkReg.works) || [];
+  h.textContent = '角色库' + (spkReg
+    ? '（' + (spkReg.n_pages || 0) + ' 个角色 / ' + (spkReg.n_works || 0)
+      + ' 个作品 / ' + (spkReg.n_episodes || 0) + ' 集入库）'
+    : '（读不到，跨集建议可能不可用）');
+  box.appendChild(h);
+  if(!works.length){
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = '库里还没有角色。给说话人填名字并确认后就会入库。';
+    box.appendChild(e);
+    return;
+  }
+  for(const w of works){
+    const wd = document.createElement('div');
+    wd.className = 'regw';
+    const wh = document.createElement('div');
+    wh.className = 'regwh';
+    wh.textContent = w.work + '（' + (w.n_pages || 0) + ' 个角色 / '
+                   + (w.n_episodes || 0) + ' 集）';
+    wd.appendChild(wh);
+    for(const p of (w.pages || [])){
+      const r = document.createElement('div');
+      r.className = 'regr';
+      const nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = p.page;
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = (p.n_enroll || 0) + ' 次入库 · ' + (p.n_episodes || 0)
+        + ' 集 · ' + Math.round(p.total_s || 0) + ' 秒'
+        + (p.vectors_usable ? '' : ' · 旧模型，不参与匹配');
+      const ren = document.createElement('button');
+      ren.className = 'mini';
+      ren.textContent = '改名';
+      ren.onclick = () => renameRegistryPage(w.work, p.page);
+      const del = document.createElement('button');
+      del.className = 'mini';
+      del.textContent = '删除';
+      del.onclick = () => forgetRegistryPage(w.work, p.page);
+      r.appendChild(nm);
+      r.appendChild(meta);
+      r.appendChild(ren);
+      r.appendChild(del);
+      wd.appendChild(r);
+    }
+    box.appendChild(wd);
+  }
+}
+
+async function renameRegistryPage(work, page){
+  const to = window.prompt('把「' + work + ' / ' + page + '」改成：', page);
+  /* 取消（prompt 返回 null）与「输入空名字」在这里是**同一件事**：都不改名。
+     所以只留这一句判据 —— `to` 为 null 时 `(to||'')` 就是空串。
+     另外写一条 `if(to === null) return;` 是**死分支**：它拦住的输入全都被
+     下面这句拦住，删掉它、改坏它都没有任何用例会红（Task 7 审查 T3）。 */
+  const name = (to || '').trim();
+  if(!name || name === page) return;
+  let obj = null;
+  try{
+    const r = await fetch('/api/registry/rename', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({work, from: page, to: name})});
+    obj = await readJson(r);
+  }catch(e){ alert('改名失败：' + e.message); return; }
+  if(obj && obj.merged) alert('已并入已有角色「' + name + '」');
+  await loadRegistry();
+  await reloadSpeakers();
+}
+
+async function forgetRegistryPage(work, page){
+  const okGo = window.confirm(
+    '删除角色库里的「' + work + ' / ' + page + '」？\n'
+    + '它的全部声纹与统计都会删掉，**不可撤销**。\n'
+    + '（本集字幕与已导出的训练集不受影响；下次要重新命名才会再入库。）');
+  if(!okGo) return;
+  try{
+    const r = await fetch('/api/registry/forget', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({work, page})});
+    await readJson(r);
+  }catch(e){ alert('删除失败：' + e.message); return; }
+  await loadRegistry();
+  await reloadSpeakers();
+}
+
+async function assignNames(names){
+  const body = {job: spk.job, work: spk.work, work_name: $('spkWork').value.trim(),
+                names};
+  try{
+    const r = await fetch('/api/speakers/assign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)});
+    await readJson(r);
+  }catch(e){ alert('保存失败：' + e.message); return; }
+  await reloadSpeakers();
+  if(selected && lastPreview) preview(selected, lastPreview);
+}
+
+async function reloadSpeakers(){
+  const url = spk.job
+    ? '/api/speakers?job=' + encodeURIComponent(spk.job)
+    : '/api/speakers?work=' + encodeURIComponent(spk.work);
+  try{
+    const r = await fetch(url);
+    const obj = await readJson(r);
+    obj.job = spk.job;
+    spk = obj;
+    await loadRegistry();          // 库可能刚变（命名/改名/删除）→ 补全与提示跟着更新
+    renderSpeakers();
+  }catch(e){
+    // 失败不能完全静默：用户以为改动生效了，其实没有
+    $('spkTip').textContent = '刷新标注面板失败：' + e.message;
+    alert('刷新标注面板失败：' + e.message);
+  }
+}
+
+$('spkClose').onclick = () => { $('spkCard').style.display = 'none'; };
+/* 作品名变了：补全与「并入/新建」提示都要跟着变。**不重渲染**整块面板 ——
+   那会把用户正在输入的角色名一起冲掉。 */
+$('spkWork').addEventListener('input', () => {
+  fillNameDatalist();
+  for(const fn of spkHintRefreshers){ try{ fn(); }catch(e){} }
+});
+$('spkOpen').onchange = async e => {
+  const name = e.target.value;
+  if(!name) return;
+  await openSpeakersByWork(name);
+  // onchange 只在值变化时触发；复位成占位项，同一个检查点才能再打开一次
+  e.target.value = '';
+};
+
+/* ---------- 导出训练集 ----------
+   导出是分钟级动作（HQ 音源要现抽 + 分离），所以**只入队**：POST /api/export
+   立刻返回任务 id，进度与完成状态都走既有的任务卡片 / 轮询（updateJob 会把
+   我们的任务对象原样更新，因为 kickPoll 里 Object.assign(j, s) 是就地改的）。 */
+function clearExportResult(){
+  spkExportJob = null;
+  spkExportDone = null;
+  $('expRes').style.display = 'none';
+  $('expList').textContent = '';
+  $('expCounts').textContent = '';
+  $('expWarn').style.display = 'none';
+  $('expWarn').textContent = '';
+}
+
+/* ---------- 导出按钮的锁定 ----------
+   为什么需要 `syncExportBtn` 这一处**唯一**的解锁点：
+   POST /api/export 只负责入队，几十毫秒就返回。原来在 `finally` 里无条件
+   `btn.disabled = false`，于是「导出中」的这几分钟按钮一直是亮的 —— 用户看
+   没反应就会再点一次，第二次白排队（后端 `_export_lock` 把它串行化，同一批
+   素材导出两遍，磁盘上两份产物、白等几分钟）。
+   反过来也不能只在 `renderExport` 里解锁：`dropJob` / `abandonJobs` 会把任务
+   从 `jobs` 里整个拿掉，那之后 `updateJob` 再也不会被调用，按钮就**永久卡死**
+   （上一轮就是因为这个才没动它）。所以解锁判据收敛到这里一处，由三条路径统一
+   调用：入队返回后（成功=锁住 / 失败=放行）、任务到达终态、任务消失。 */
+const EXPORT_SETTLED = ['done', 'error', 'stopped', 'abandoned'];
+
+function syncExportBtn(){
+  const btn = $('expGo');
+  if(!btn) return;
+  // 没盯着的任务 = 空闲；盯着的那条还在跑（wait/run/别的非终态）= 锁住
+  const j = spkExportJob ? jobs.find(x=>x.id === spkExportJob) : null;
+  btn.disabled = !!(j && EXPORT_SETTLED.indexOf(j.status) < 0);
+}
+
+async function startExport(){
+  if(!spk || !spk.work){ $('expTip').textContent = '没有可导出的检查点。'; return; }
+  const workName = $('spkWork').value.trim();
+  if(!workName){
+    $('expTip').textContent = '请先填写作品名，用于命名导出的训练集。';
+    return;
+  }
+  const btn = $('expGo');
+  btn.disabled = true;
+  clearExportResult();
+  try{
+    const r = await fetch('/api/export', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({job: spk.job || '', work: spk.work, work_name: workName,
+                            sr: parseInt($('expSr').value, 10),
+                            format: $('expFormat').value || 'gpt_sovits',
+                            source: $('expSource').value,
+                            drop_short: $('expDropShort').checked})});
+    const obj = await readJson(r);
+    spkExportJob = obj.id;
+    /* 登记与建卡片是 addJob 一个人的活（它自己 Jobs.push）。这里**不能**先 push
+       再 addJob(最后一个)：addJob 开头的 `jobs.some(x=>x.id===j.id)` 早退会让
+       卡片永远不建，els[id] 不存在 -> updateJob 早退 -> renderExport 永不执行，
+       于是导出完成后面板上既没有 .list 路径也没有「打开目录」。 */
+    addJob({id: obj.id, name: workName + ' · 训练集', kind: 'export',
+            status: 'wait', stage: '准备导出', progress: 0, logs: [], files: []});
+    $('expTip').textContent = '已入队，进度见「任务进度」里的卡片。';
+    kickPoll();
+  }catch(e){
+    $('expTip').textContent = '导出失败：' + e.message;
+  }finally{
+    // 不是无条件解锁：入队成功了这里就应当保持锁定（见 syncExportBtn 的注释）
+    syncExportBtn();
+  }
+}
+
+/* 任务对象由 kickPoll 就地更新（Object.assign），所以这里比对的是引用。 */
+function renderExport(j){
+  if(!spkExportJob || j.id !== spkExportJob) return;
+  const r = j.result;
+  if(j.status === 'done' && r){
+    if(spkExportDone === j.id) return;      // 已经渲染过，别重复渲染
+    spkExportDone = j.id;
+    $('expRes').style.display = '';
+    const format = r.format || 'gpt_sovits';
+    $('expList').textContent = r.manifest_path || r.list_path || r.list || '';
+    $('expManifestLabel').textContent = format === 'fish_speech' ? '配对索引' : '标注文件';
+    $('expList').title = r.report_path || '';
+    const folders = Object.keys(r.folders || {})
+      .map(k => k + ' ' + r.folders[k]).join('、') || '（没有角色目录）';
+    const annotationCount = format === 'gpt_sovits' ? '进 .list ' : '标注 ';
+    $('expCounts').textContent = '片段 ' + (r.n_clips||0) + ' · ' + annotationCount + (r.n_list||0)
+      + ' · 短句 ' + (r.n_short||0) + ' · 未命名 ' + (r.n_unknown||0)
+      + ' · 共 ' + (r.total_mb||0) + ' MB｜' + folders;
+    if(r.warning){
+      $('expWarn').style.display = '';
+      $('expWarn').textContent = r.warning;
+    }
+    syncExportBtn();
+    $('expTip').textContent = '导出完成。';
+    return;
+  }
+  if(j.status === 'error'){
+    $('expTip').textContent = '导出失败：' + (j.error || '未知原因');
+    syncExportBtn();
+    return;
+  }
+  if(j.status === 'stopped' || j.status === 'abandoned'){
+    $('expTip').textContent = '导出已' + (j.status === 'stopped' ? '停止' : '放弃') + '。';
+    syncExportBtn();
+    return;
+  }
+  // 排队中/进行中：把阶段与百分比显示出来，不要等 800 ms 的轮询
+  $('expTip').textContent = '导出中：' + (j.stage || '排队中')
+    + '（' + Math.round((j.progress||0) * 100) + '%）';
+}
+
+const exportFormatTips = {
+  gpt_sovits: '把 .list 文件填入 GPT-SoVITS 的标注文件路径。',
+  txt: '用文本编辑器或表格软件查看音频路径、角色、语言和台词。',
+  fish_speech: '把按角色分组的 WAV 和同名 .lab 一起交给 Fish Speech 的数据准备脚本。',
+  indextts: '把 JSONL 清单交给 instavar 社区训练器的 preprocess_data.py。'
+};
+$('expFormat').onchange = () => {
+  $('expFormatNote').textContent = exportFormatTips[$('expFormat').value];
+};
+$('expGo').onclick = startExport;
+$('expOpen').onclick = () => {
+  const list = $('expList').textContent;
+  if(!list) return;
+  const dir = list.replace(/[\\/][^\\/]*$/, '');
+  fetch('/api/openfolder?path=' + encodeURIComponent(dir));
+};
+
+/* ---------- 轮询：只更新数据，DOM 由 updateJob 增量改 ---------- */
+let polling = false;
+async function kickPoll(){
+  if(polling) return;
+  polling = true;
+  let alive = true;
+  while(alive){
+    alive = false;
+    const gone = [];
+    for(const j of jobs){
+      if(j.status==='done'||j.status==='error'||j.status==='stopped'
+         ||j.status==='abandoned') continue;
+      alive = true;
+      try{
+        const r = await fetch('/api/status?id='+j.id);
+        if(r.ok){ const s = await r.json();
+          Object.assign(j, s); if(s.status==='stopped') j.stop=true; }
+        else if(r.status===404){ gone.push(j.id); continue; }   // 已被放弃，服务端已删
+      }catch(e){}
+      updateJob(j);
+    }
+    gone.forEach(dropJob);
+    const busy = jobs.some(j=>j.status==='run'||j.status==='wait');
+    $('stopAll').style.display = busy ? '' : 'none';
+    $('abandonAll').style.display =
+      jobs.some(j=>['wait','run','stopped','error'].includes(j.status)) ? '' : 'none';
+    if(alive) await new Promise(r=>setTimeout(r,800));
+  }
+  polling = false;
+  refreshResumable();          // 有任务停下时刷新「可继续」列表
+}
+
+async function preview(jid,name){
+  selected=jid; lastPreview=name;
+  const j = jobs.find(x=>x.id===jid);
+  const text = await (await fetch(`/api/result?id=${jid}&name=${encodeURIComponent(name)}`)).text();
+  $('previewCard').style.display='block';
+  /* 文件名一律走 textContent + onclick，**绝不拼进 innerHTML**：
+     导出任务的 files[].name 就是用户填的作品名（`<作品名>.list`），
+     名字里带 `'` `)` `<` 时，拼串会把文件名变成标签/属性的一部分
+     （实测作品名 `x');alert(1);('` 会生成 onclick="preview('ID','x');alert(1);('.list')"）。
+     这里改用 DOM 构造：文本与代码彻底分开，名字再怪也只是文本。 */
+  const acts = $('acts');
+  acts.replaceChildren();
+  const files = (j && j.files) || [];
+  files.forEach(f=>{
+    const b = document.createElement('button');
+    b.textContent = f.name;
+    if(f.name===name) b.style.cssText='border-color:var(--accent);color:var(--accent)';
+    b.onclick = ()=>preview(jid, f.name);
+    acts.appendChild(b);
+  });
+  const dl = document.createElement('button');
+  dl.textContent = '下载';
+  dl.onclick = ()=>window.open(
+    `/api/download?id=${jid}&name=${encodeURIComponent(name)}`,'_blank');
+  acts.appendChild(dl);
+  $('srt').textContent = text;
+  $('previewCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function showConnectionError(message){
+  backendConnected=false;
+  $('connectionBanner').style.display='block';
+  $('connectionNotice').textContent=message;
+  $('openWorkbench').href='http://127.0.0.1:8760/';
+  ['go','goSep','chooseFolder','downloadLink','openOut','openSep','addPath'].forEach(id=>$(id).disabled=true);
+}
+function bootWorkbench(){
+  if(window.location && window.location.protocol==='file:'){
+    const saved=loadSettings();
+    if(['whisper','qwen'].includes(saved.backend)) $('backend').value=saved.backend;
+    setLanguages(saved.language || ($('backend').value==='qwen'?'zh':'ja'));
+    updateTaskControls();
+    showConnectionError('当前直接打开的是 ui.html 文件，尚未连接工作台服务。请双击同目录的 jisheng-webui.cmd 启动服务，再点击下方“打开本地工作台”。Qwen 支持的完整语言列表需要通过工作台使用。');
+    return;
+  }
+  init(); renderFiles(); kickPoll();
+}
+bootWorkbench();
+</script>
+</body>
+</html>
