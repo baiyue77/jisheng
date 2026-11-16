@@ -107,7 +107,7 @@ class DownloadTests(unittest.TestCase):
                 D.run(W,job)
             self.assertEqual(job['status'],'done')
             self.assertEqual(job['result']['title'],'Test video')
-            self.assertEqual(job['result']['media_paths'],[str(Path(td)/'video.mp4')])
+            self.assertEqual(job['result']['media_paths'], [str((Path(td) / 'video.mp4').resolve())])
 
     def test_stopped_download_does_not_launch_or_resolve_a_url(self):
         import download_jobs as D
