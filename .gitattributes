@@ -1,0 +1,35 @@
+# 本仓库 `core.autocrlf=false` 且原先没有 .gitattributes。
+# 后果已经实际发生过一次：4 个源文件被写成 CRLF，而 HEAD 存的是 LF，
+# `git diff` 报 1143 增 / 1143 删，而 `git diff --ignore-cr-at-eol` 显示**零改动**
+# —— 纯行尾翻转差一点混进提交。
+# 这里按文件类型钉死行尾，让「谁写的工具把行尾改了」不再能污染提交：
+#   * 源码 / 文档 / 前端  -> LF （与 Python 侧、GPT-SoVITS `.list` 的口径一致）
+#   * Windows 批处理      -> CRLF （LF 行尾的 .cmd 在 cmd.exe 下可能读错 label/goto，
+#                            所以**不要**用 `* text eol=lf` 一把梭）
+*.py     text eol=lf
+*.md     text eol=lf
+*.html   text eol=lf
+*.css    text eol=lf
+*.js     text eol=lf
+# 前端探针是 ES module（`node xx.mjs`），`*.js` 匹配不到它
+*.mjs    text eol=lf
+*.json   text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.txt    text eol=lf
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
+
+# 二进制（别让 git 试图做行尾转换）
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.webp   binary
+*.mp3    binary
+*.mp4    binary
+*.wav    binary
+*.npz    binary
+*.ckpt   binary
+*.safetensors binary
+*.pt     binary
+*.bin    binary
