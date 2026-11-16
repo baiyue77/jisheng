@@ -1,0 +1,55 @@
+# 虚拟环境（包含可选模型运行环境）
+venv/
+venv-sep/
+venv-diarize/
+pip-cache/
+/tools/ffmpeg/
+
+# 模型权重：体积大，按需下载，不入库
+models/
+*.safetensors
+*.ckpt
+*.pth
+
+# 凭据、本机专用素材和配置
+.env
+.env.*
+!.env.example
+cookies*.txt
+*.cookies
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+/assets/backgrounds/*.webp
+!/assets/backgrounds/eris.webp
+!/assets/backgrounds/klee.webp
+!/assets/backgrounds/megumin.webp
+/glossary/*.txt
+!/glossary/example.txt
+/docs/superpowers/
+
+# 运行期产物与中间结果
+uploads/
+work/
+output/
+compare/
+review/
+tmp/
+
+# 跨集角色库 / 声纹向量（应用状态，不是交付物；故意放在导出根之外）
+speakers_registry/
+__pycache__/
+*.pyc
+
+# 日志与临时文件
+*.log
+_c.txt
+
+# 本机私有笔记，不属于项目源码
+.workbuddy/
+
+# subagent 执行过程的临时交接文件（任务摘要、diff 包、进度台账）
+.superpowers/
